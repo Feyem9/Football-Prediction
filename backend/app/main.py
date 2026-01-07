@@ -2,12 +2,16 @@ from fastapi import FastAPI, Depends
 from sqlalchemy.orm import Session
 from core.database import get_db, engine
 from models import Base
+from api.v1.routes.auth import router as auth_router
 import os
 
 # Création des tables au démarrage (pour le développement)
 Base.metadata.create_all(bind=engine)
 
 app = FastAPI(title="Pronoscore API")
+
+# Enregistrer les routes
+app.include_router(auth_router, prefix="/api/v1")
 
 @app.get("/")
 def read_root():

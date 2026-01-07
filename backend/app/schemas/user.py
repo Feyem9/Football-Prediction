@@ -1,0 +1,23 @@
+from pydantic import BaseModel, EmailStr
+from typing import Optional
+
+
+class UserBase(BaseModel):
+    """Schéma de base pour l'utilisateur."""
+    username: str
+    email: EmailStr
+
+
+class UserCreate(UserBase):
+    """Schéma pour la création d'utilisateur (avec mot de passe)."""
+    password: str
+
+
+class UserResponse(UserBase):
+    """Schéma de réponse utilisateur (sans mot de passe)."""
+    id: int
+    is_active: bool
+    is_superuser: bool
+
+    class Config:
+        from_attributes = True

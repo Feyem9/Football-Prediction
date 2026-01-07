@@ -5,3 +5,8 @@ psycopg2-binary
 aioredis
 pika
 python-dotenv
+alembic
+python-jose
+passlib
+bcrypt
+email-validator
