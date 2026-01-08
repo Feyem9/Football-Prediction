@@ -6,7 +6,19 @@ aioredis
 pika
 python-dotenv
 alembic
-python-jose
+python-jose[cryptography]
 passlib
 bcrypt
 email-validator
+pydantic-settings
+cloudinary
+python-multipart
+
+# Testing
+pytest
+pytest-asyncio
+pytest-cov
+httpx
+
+
+

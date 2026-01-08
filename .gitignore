@@ -55,3 +55,11 @@ backend/app/__pycache__/
 frontend/node_modules/
 frontend/dist/
 frontend/.next/
+
+# Production env
+.env.production
+.env.production.example
+
+# Coverage
+.coverage
+*.coverage

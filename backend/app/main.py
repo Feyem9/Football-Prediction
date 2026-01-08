@@ -3,6 +3,7 @@ from sqlalchemy.orm import Session
 from core.database import get_db, engine
 from models import Base
 from api.v1.routes.auth import router as auth_router
+from api.v1.routes.profile import router as profile_router
 import os
 
 # Création des tables au démarrage (pour le développement)
@@ -12,6 +13,7 @@ app = FastAPI(title="Pronoscore API")
 
 # Enregistrer les routes
 app.include_router(auth_router, prefix="/api/v1")
+app.include_router(profile_router, prefix="/api/v1")
 
 @app.get("/")
 def read_root():
