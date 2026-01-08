@@ -3,7 +3,8 @@ from sqlalchemy.orm import Session
 from fastapi import HTTPException, status
 
 from models.user import User
-from schemas.user import UserCreate
+from schemas.user import UserCreate, UserLogin, Token
+from core.security import create_access_token
 
 
 def hash_password(password: str) -> str:
@@ -19,6 +20,65 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
     password_bytes = plain_password.encode('utf-8')
     hashed_bytes = hashed_password.encode('utf-8')
     return bcrypt.checkpw(password_bytes, hashed_bytes)
+
+
+def authenticate_user(email: str, password: str, db: Session) -> User | None:
+    """
+    Authentifie un utilisateur par email et mot de passe.
+    
+    Args:
+        email: Email de l'utilisateur
+        password: Mot de passe en clair
+        db: Session de base de données
+        
+    Returns:
+        User si authentification réussie, None sinon
+    """
+    user = db.query(User).filter(User.email == email).first()
+    
+    if not user:
+        return None
+    
+    if not verify_password(password, user.hashed_password):
+        return None
+    
+    return user
+
+
+def login_user(login_data: UserLogin, db: Session) -> Token:
+    """
+    Connecte un utilisateur et génère un token JWT.
+    
+    Args:
+        login_data: Données de connexion (email, password)
+        db: Session de base de données
+        
+    Returns:
+        Token JWT
+        
+    Raises:
+        HTTPException: Si les credentials sont invalides
+    """
+    user = authenticate_user(login_data.email, login_data.password, db)
+    
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Email ou mot de passe incorrect",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    
+    if not user.is_active:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Compte désactivé",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    
+    # Créer le token JWT avec l'email comme subject
+    access_token = create_access_token(data={"sub": user.email})
+    
+    return Token(access_token=access_token, token_type="bearer")
 
 
 def register_user(user_data: UserCreate, db: Session) -> User:
@@ -63,3 +123,4 @@ def register_user(user_data: UserCreate, db: Session) -> User:
     db.refresh(new_user)
     
     return new_user
+
