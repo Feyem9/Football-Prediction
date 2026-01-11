@@ -4,6 +4,7 @@ from .base import Base
 
 
 class User(Base):
+    """Modèle utilisateur avec authentification et profil."""
     __tablename__ = "users"
 
     id = Column(Integer, primary_key=True, index=True)

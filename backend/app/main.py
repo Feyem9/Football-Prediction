@@ -1,10 +1,10 @@
 from fastapi import FastAPI, Depends
 from sqlalchemy.orm import Session
+from sqlalchemy import text
 from core.database import get_db, engine
 from models import Base
 from api.v1.routes.auth import router as auth_router
 from api.v1.routes.profile import router as profile_router
-import os
 
 # Création des tables au démarrage (pour le développement)
 Base.metadata.create_all(bind=engine)
@@ -25,9 +25,10 @@ def read_root():
 
 @app.get("/health")
 def health_check(db: Session = Depends(get_db)):
+    """Vérifie l'état de santé de l'API et de la connexion à la base de données."""
     try:
         # Test simple de connexion à la base de données
-        db.execute(Base.metadata.tables.get("dual", "SELECT 1"))
+        db.execute(text("SELECT 1"))
         return {"status": "healthy", "database": "connected"}
     except Exception as e:
         return {"status": "unhealthy", "database": str(e)}

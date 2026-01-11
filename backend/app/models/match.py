@@ -3,6 +3,7 @@ from sqlalchemy.orm import relationship
 from .base import Base
 
 class Match(Base):
+    """Modèle représentant un match de football avec scores et statut."""
     __tablename__ = "matches"
 
     id = Column(Integer, primary_key=True, index=True)
