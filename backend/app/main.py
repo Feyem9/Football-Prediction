@@ -5,6 +5,7 @@ from core.database import get_db, engine
 from models import Base
 from api.v1.routes.auth import router as auth_router
 from api.v1.routes.profile import router as profile_router
+from api.v1.routes.matches import router as matches_router
 
 # Création des tables au démarrage (pour le développement)
 Base.metadata.create_all(bind=engine)
@@ -14,6 +15,7 @@ app = FastAPI(title="Pronoscore API")
 # Enregistrer les routes
 app.include_router(auth_router, prefix="/api/v1")
 app.include_router(profile_router, prefix="/api/v1")
+app.include_router(matches_router, prefix="/api/v1")
 
 @app.get("/")
 def read_root():
