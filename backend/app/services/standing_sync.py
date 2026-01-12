@@ -4,12 +4,15 @@ Service de synchronisation des classements depuis Football-Data.org.
 Ce service permet de synchroniser les classements depuis l'API externe
 vers la base de données locale pour réduire les appels API.
 """
+import logging
 from datetime import datetime, timezone
 from typing import Optional, List
 from sqlalchemy.orm import Session
 
 from models.standing import Standing
 from services.football_api import football_data_service
+
+logger = logging.getLogger(__name__)
 
 
 class StandingSyncService:
@@ -111,10 +114,12 @@ class StandingSyncService:
             Nombre d'entrées synchronisées
         """
         try:
+            logger.info(f"Syncing standings for competition: {competition_code}")
             result = await football_data_service.get_standings(competition_code)
             
             standings_data = result.get("standings", [])
             if not standings_data:
+                logger.warning(f"No standings data found for {competition_code}")
                 return 0
             
             competition = result.get("competition", {})
@@ -135,10 +140,12 @@ class StandingSyncService:
                 count += 1
             
             self.db.commit()
+            logger.info(f"Successfully synced {count} entries for {competition_code}")
             return count
             
         except Exception as e:
             self.db.rollback()
+            logger.error(f"Error syncing standings for {competition_code}: {e}")
             raise e
     
     async def sync_all_standings(self) -> int:
@@ -149,6 +156,7 @@ class StandingSyncService:
             Nombre total d'entrées synchronisées
         """
         total = 0
+        logger.info("Starting sync for all supported competitions")
         for code in self.SYNC_COMPETITIONS:
             try:
                 count = await self.sync_standings(code)
@@ -156,6 +164,7 @@ class StandingSyncService:
             except Exception:
                 continue  # Skip si erreur sur une compétition
         
+        logger.info(f"Finished sync for all competitions. Total entries: {total}")
         return total
     
     def get_standings(self, competition_code: str) -> List[Standing]:
@@ -190,5 +199,11 @@ class StandingSyncService:
         if not latest or not latest.last_synced:
             return True
         
-        age = datetime.now(timezone.utc) - latest.last_synced.replace(tzinfo=timezone.utc)
+        # Ensure UTC comparison
+        now = datetime.now(timezone.utc)
+        last_synced = latest.last_synced
+        if last_synced.tzinfo is None:
+            last_synced = last_synced.replace(tzinfo=timezone.utc)
+            
+        age = now - last_synced
         return age.total_seconds() > (max_age_hours * 3600)

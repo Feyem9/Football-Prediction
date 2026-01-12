@@ -4,12 +4,15 @@ Service de synchronisation des matchs depuis Football-Data.org.
 Ce service permet de synchroniser les matchs depuis l'API externe
 vers la base de données locale.
 """
+import logging
 from datetime import datetime, timezone, timedelta
 from typing import Optional, List
 from sqlalchemy.orm import Session
 
 from models.match import Match
 from services.football_api import football_data_service
+
+logger = logging.getLogger(__name__)
 
 
 class MatchSyncService:

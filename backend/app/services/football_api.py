@@ -9,8 +9,11 @@ Documentation API: https://docs.football-data.org
 import httpx
 import asyncio
 import time
+import logging
 from typing import Optional, Any, List
 from core.config import settings
+
+logger = logging.getLogger(__name__)
 
 
 class RateLimiter:
@@ -44,7 +47,7 @@ class RateLimiter:
                 wait_time = self.period - (now - oldest)
                 
                 if wait_time > 0:
-                    print(f"⏳ Rate limit atteint. Attente de {wait_time:.1f}s...")
+                    logger.warning(f"⏳ Rate limit atteint. Attente de {wait_time:.1f}s...")
                     await asyncio.sleep(wait_time)
                     # Nettoyer à nouveau après l'attente
                     now = time.time()

@@ -4,3 +4,4 @@ from .match import Match
 from .prediction import ExpertPrediction
 from .token import RefreshToken, TokenBlacklist
 from .standing import Standing
+from .team_stats import TeamStats
