@@ -2,7 +2,7 @@
 Routes API pour les matchs, compétitions et prédictions.
 
 Ces endpoints exposent les données Football-Data.org au frontend.
-La logique métier est dans controllers/matches_controller.py.
+La logique métier est dans controllers/.
 """
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
@@ -18,6 +18,7 @@ from schemas.match import (
     PredictionResponse
 )
 from controllers import matches_controller
+from controllers import standings_controller
 
 
 router = APIRouter(prefix="/matches", tags=["Matches & Predictions"])
@@ -83,9 +84,18 @@ async def get_competition(code: str):
 
 
 @router.get("/competitions/{code}/standings", response_model=StandingsResponse)
-async def get_standings(code: str):
-    """Récupère le classement d'une compétition."""
-    return await matches_controller.get_standings(code)
+async def get_standings(
+    code: str,
+    refresh: bool = Query(False, description="Forcer rafraîchissement"),
+    db: Session = Depends(get_db)
+):
+    """
+    Récupère le classement d'une compétition.
+    
+    Les données sont mises en cache en DB (rafraîchies toutes les 6h).
+    Utilisez refresh=true pour forcer la mise à jour.
+    """
+    return await standings_controller.get_standings(db, code, force_refresh=refresh)
 
 
 # =====================
@@ -99,6 +109,15 @@ async def sync_matches(
 ):
     """Synchronise les matchs depuis Football-Data.org."""
     return await matches_controller.sync_matches(db, competition)
+
+
+@router.post("/standings/sync", tags=["Admin"])
+async def sync_standings(
+    competition: Optional[str] = Query(None, description="Code compétition ou vide pour toutes"),
+    db: Session = Depends(get_db)
+):
+    """Synchronise les classements depuis Football-Data.org."""
+    return await standings_controller.sync_standings(db, competition)
 
 
 @router.post("/predictions/generate", tags=["Admin"])
