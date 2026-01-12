@@ -7,8 +7,58 @@ compétitions, équipes et classements depuis l'API Football-Data.org (v4).
 Documentation API: https://docs.football-data.org
 """
 import httpx
-from typing import Optional, Any
+import asyncio
+import time
+from typing import Optional, Any, List
 from core.config import settings
+
+
+class RateLimiter:
+    """
+    Rate limiter simple pour le plan gratuit Football-Data.org.
+    Limite: 10 requêtes par minute.
+    """
+    
+    def __init__(self, max_calls: int = 10, period: float = 60.0):
+        """
+        Args:
+            max_calls: Nombre maximum d'appels autorisés
+            period: Période en secondes
+        """
+        self.max_calls = max_calls
+        self.period = period
+        self.calls: List[float] = []
+        self._lock = asyncio.Lock()
+    
+    async def acquire(self):
+        """Attend si nécessaire avant de permettre un nouvel appel."""
+        async with self._lock:
+            now = time.time()
+            
+            # Nettoyer les appels expirés
+            self.calls = [t for t in self.calls if now - t < self.period]
+            
+            if len(self.calls) >= self.max_calls:
+                # Calculer le temps d'attente
+                oldest = self.calls[0]
+                wait_time = self.period - (now - oldest)
+                
+                if wait_time > 0:
+                    print(f"⏳ Rate limit atteint. Attente de {wait_time:.1f}s...")
+                    await asyncio.sleep(wait_time)
+                    # Nettoyer à nouveau après l'attente
+                    now = time.time()
+                    self.calls = [t for t in self.calls if now - t < self.period]
+            
+            # Enregistrer cet appel
+            self.calls.append(time.time())
+    
+    @property
+    def remaining_calls(self) -> int:
+        """Retourne le nombre d'appels restants dans la période."""
+        now = time.time()
+        active_calls = [t for t in self.calls if now - t < self.period]
+        return max(0, self.max_calls - len(active_calls))
 
 
 class FootballDataService:
@@ -16,12 +66,15 @@ class FootballDataService:
     Client pour l'API Football-Data.org.
     
     Plan Gratuit (Free Tier):
-    - 10 requêtes/minute
+    - 10 requêtes/minute (avec rate limiting automatique)
     - Compétitions: Premier League, Bundesliga, La Liga, Serie A, Ligue 1,
       Eredivisie, Primeira Liga, Championship, Champions League, Euro
     """
     
     BASE_URL = "https://api.football-data.org/v4"
+    
+    # Rate limiter partagé (singleton)
+    _rate_limiter: Optional[RateLimiter] = None
     
     def __init__(self):
         """Initialise le client avec la clé API depuis les settings."""
@@ -30,10 +83,19 @@ class FootballDataService:
             "X-Auth-Token": self.api_key,
             "Content-Type": "application/json"
         }
+        
+        # Initialiser le rate limiter si pas déjà fait
+        if FootballDataService._rate_limiter is None:
+            FootballDataService._rate_limiter = RateLimiter(max_calls=10, period=60.0)
+    
+    @property
+    def rate_limiter(self) -> RateLimiter:
+        """Retourne le rate limiter partagé."""
+        return FootballDataService._rate_limiter
     
     async def _make_request(self, endpoint: str, params: Optional[dict] = None) -> dict:
         """
-        Effectue une requête GET vers l'API.
+        Effectue une requête GET vers l'API avec rate limiting.
         
         Args:
             endpoint: Endpoint API (ex: "/competitions")
@@ -45,6 +107,9 @@ class FootballDataService:
         Raises:
             httpx.HTTPStatusError: En cas d'erreur HTTP
         """
+        # Attendre si rate limit atteint
+        await self.rate_limiter.acquire()
+        
         async with httpx.AsyncClient() as client:
             response = await client.get(
                 f"{self.BASE_URL}{endpoint}",
@@ -99,7 +164,9 @@ class FootballDataService:
         competition_code: str, 
         matchday: Optional[int] = None,
         status: Optional[str] = None,
-        season: Optional[int] = None
+        season: Optional[int] = None,
+        date_from: Optional[str] = None,
+        date_to: Optional[str] = None
     ) -> dict:
         """
         Récupère les matchs d'une compétition.
@@ -109,6 +176,8 @@ class FootballDataService:
             matchday: Journée spécifique (optionnel)
             status: Filtre par statut (SCHEDULED, LIVE, FINISHED, etc.)
             season: Année de début de la saison
+            date_from: Date de début (YYYY-MM-DD)
+            date_to: Date de fin (YYYY-MM-DD)
             
         Returns:
             Liste des matchs
@@ -120,6 +189,10 @@ class FootballDataService:
             params["status"] = status
         if season:
             params["season"] = season
+        if date_from:
+            params["dateFrom"] = date_from
+        if date_to:
+            params["dateTo"] = date_to
         return await self._make_request(f"/competitions/{competition_code}/matches", params or None)
     
     # =====================
@@ -130,7 +203,8 @@ class FootballDataService:
         self,
         date_from: Optional[str] = None,
         date_to: Optional[str] = None,
-        status: Optional[str] = None
+        status: Optional[str] = None,
+        competitions: Optional[str] = None
     ) -> dict:
         """
         Récupère les matchs selon des filtres.
@@ -139,6 +213,7 @@ class FootballDataService:
             date_from: Date de début (format: YYYY-MM-DD)
             date_to: Date de fin (format: YYYY-MM-DD)
             status: Filtre par statut (SCHEDULED, LIVE, IN_PLAY, FINISHED, etc.)
+            competitions: IDs des compétitions séparés par virgule
             
         Returns:
             Liste des matchs correspondant aux filtres
@@ -150,6 +225,8 @@ class FootballDataService:
             params["dateTo"] = date_to
         if status:
             params["status"] = status
+        if competitions:
+            params["competitions"] = competitions
         return await self._make_request("/matches", params or None)
     
     async def get_match(self, match_id: int) -> dict:
