@@ -38,6 +38,9 @@ class Settings(BaseSettings):
     cloudinary_api_key: str = os.getenv("CLOUDINARY_API_KEY", "")
     cloudinary_api_secret: str = os.getenv("CLOUDINARY_API_SECRET", "")
     
+    # Football-Data.org API
+    football_data_api_key: str = os.getenv("FOOTBALL_DATA_API_KEY", "")
+    
     class Config:
         env_file = ".env"
         case_sensitive = False
