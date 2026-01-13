@@ -74,12 +74,12 @@ class MatchListResponse(BaseModel):
 
 class CompetitionResponse(BaseModel):
     """Informations d'une compétition."""
-    id: int
-    code: str
-    name: str
-    area: str
+    id: Optional[int] = None
+    code: Optional[str] = None
+    name: Optional[str] = None
+    area: Optional[str] = None
     emblem: Optional[str] = None
-    type: str  # LEAGUE, CUP, etc.
+    type: Optional[str] = None  # LEAGUE, CUP, etc.
     current_season: Optional[int] = None
     current_matchday: Optional[int] = None
 

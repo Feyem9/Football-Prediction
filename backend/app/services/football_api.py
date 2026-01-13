@@ -109,19 +109,34 @@ class FootballDataService:
             
         Raises:
             httpx.HTTPStatusError: En cas d'erreur HTTP
+            ValueError: En cas d'erreur de parsing JSON
+            Exception: Pour toute autre erreur inattendue
         """
         # Attendre si rate limit atteint
         await self.rate_limiter.acquire()
         
-        async with httpx.AsyncClient() as client:
-            response = await client.get(
-                f"{self.BASE_URL}{endpoint}",
-                headers=self.headers,
-                params=params,
-                timeout=30.0
-            )
-            response.raise_for_status()
-            return response.json()
+        try:
+            async with httpx.AsyncClient() as client:
+                response = await client.get(
+                    f"{self.BASE_URL}{endpoint}",
+                    headers=self.headers,
+                    params=params,
+                    timeout=30.0
+                )
+                response.raise_for_status()
+                return response.json()
+        except httpx.HTTPStatusError as e:
+            logger.error(f"❌ Erreur API HTTP {e.response.status_code}: {e}")
+            raise
+        except httpx.RequestError as e:
+            logger.error(f"❌ Erreur connexion API: {e}")
+            raise Exception(f"Erreur de connexion à l'API: {e}")
+        except ValueError as e:
+            logger.error(f"❌ Erreur parsing JSON: {e}")
+            raise
+        except Exception as e:
+            logger.error(f"❌ Erreur inattendue API: {e}")
+            raise
     
     # =====================
     # Compétitions

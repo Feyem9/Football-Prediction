@@ -26,6 +26,37 @@ router = APIRouter(prefix="/matches", tags=["Matches & Predictions"])
 
 
 # =====================
+# Endpoints Compétitions (Doit être avant /{match_id})
+# =====================
+
+@router.get("/competitions", response_model=CompetitionListResponse)
+async def get_competitions():
+    """Liste toutes les compétitions disponibles."""
+    return await matches_controller.get_competitions()
+
+
+@router.get("/competitions/{code}", response_model=CompetitionResponse)
+async def get_competition(code: str):
+    """Détails d'une compétition spécifique."""
+    return await matches_controller.get_competition(code)
+
+
+@router.get("/competitions/{code}/standings", response_model=StandingsResponse)
+async def get_standings(
+    code: str,
+    refresh: bool = Query(False, description="Forcer rafraîchissement"),
+    db: Session = Depends(get_db)
+):
+    """
+    Récupère le classement d'une compétition.
+    
+    Les données sont mises en cache en DB (rafraîchies toutes les 6h).
+    Utilisez refresh=true pour forcer la mise à jour.
+    """
+    return await standings_controller.get_standings(db, code, force_refresh=refresh)
+
+
+# =====================
 # Endpoints Matchs
 # =====================
 
