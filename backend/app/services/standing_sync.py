@@ -125,22 +125,30 @@ class StandingSyncService:
             competition = result.get("competition", {})
             season = result.get("season", {})
             
-            table = standings_data[0].get("table", [])
-            
             count = 0
-            for entry in table:
-                parsed = self._parse_standing_data(
-                    entry=entry,
-                    competition_code=competition.get("code", competition_code),
-                    competition_name=competition.get("name", ""),
-                    season=season.get("id", 0),
-                    matchday=season.get("currentMatchday")
-                )
-                self._upsert_standing(parsed)
-                count += 1
+            for standing_table in standings_data:
+                table = standing_table.get("table", [])
+                group = standing_table.get("group")  # Optionnel: pour info
+                
+                for entry in table:
+                    # Skip entries where team is not yet assigned (TBD slots in WC)
+                    team = entry.get("team", {})
+                    if not team.get("id"):
+                        continue
+                        
+                    parsed = self._parse_standing_data(
+                        entry=entry,
+                        competition_code=competition.get("code", competition_code),
+                        competition_name=competition.get("name", ""),
+                        season=season.get("id", 0),
+                        matchday=season.get("currentMatchday")
+                    )
+                    self._upsert_standing(parsed)
+                    count += 1
             
             self.db.commit()
-            logger.info(f"Successfully synced {count} entries for {competition_code}")
+            if count > 0:
+                logger.info(f"Successfully synced {count} entries for {competition_code}")
             return count
             
         except Exception as e:

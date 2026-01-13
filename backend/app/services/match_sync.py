@@ -103,7 +103,9 @@ class MatchSyncService:
     async def sync_competition_matches(
         self, 
         competition_code: str,
-        status: Optional[str] = None
+        status: Optional[str] = None,
+        date_from: Optional[str] = None,
+        date_to: Optional[str] = None
     ) -> int:
         """
         Synchronise les matchs d'une compétition.
@@ -111,6 +113,8 @@ class MatchSyncService:
         Args:
             competition_code: Code de la compétition (ex: "PL", "FL1")
             status: Filtre par statut (SCHEDULED, FINISHED, etc.)
+            date_from: Date de début (YYYY-MM-DD)
+            date_to: Date de fin (YYYY-MM-DD)
             
         Returns:
             Nombre de matchs synchronisés
@@ -118,12 +122,20 @@ class MatchSyncService:
         try:
             result = await football_data_service.get_competition_matches(
                 competition_code, 
-                status=status
+                status=status,
+                date_from=date_from,
+                date_to=date_to
             )
             matches = result.get("matches", [])
             
             count = 0
             for match_data in matches:
+                # Skip TBD matches (playoff fixtures without assigned teams)
+                home_team = match_data.get("homeTeam", {})
+                away_team = match_data.get("awayTeam", {})
+                if not home_team.get("name") or not away_team.get("name"):
+                    continue
+                    
                 parsed = self._parse_match_data(match_data)
                 self._upsert_match(parsed)
                 count += 1

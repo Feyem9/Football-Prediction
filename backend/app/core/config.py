@@ -1,4 +1,4 @@
-from pydantic_settings import BaseSettings
+from pydantic_settings import BaseSettings, SettingsConfigDict
 from functools import lru_cache
 import os
 from dotenv import load_dotenv
@@ -41,9 +41,7 @@ class Settings(BaseSettings):
     # Football-Data.org API
     football_data_api_key: str = os.getenv("FOOTBALL_DATA_API_KEY", "")
     
-    class Config:
-        env_file = ".env"
-        case_sensitive = False
+    model_config = SettingsConfigDict(env_file=".env", case_sensitive=False)
 
 
 @lru_cache()

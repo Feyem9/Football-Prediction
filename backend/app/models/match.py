@@ -26,13 +26,13 @@ class Match(Base):
     
     # Équipe domicile
     home_team = Column(String(100), nullable=False)
-    home_team_id = Column(Integer, nullable=True)
+    home_team_id = Column(Integer, nullable=True, index=True)
     home_team_short = Column(String(50), nullable=True)  # Nom court (ex: "PSG")
     home_team_crest = Column(String(500), nullable=True)  # URL écusson
     
     # Équipe extérieur
     away_team = Column(String(100), nullable=False)
-    away_team_id = Column(Integer, nullable=True)
+    away_team_id = Column(Integer, nullable=True, index=True)
     away_team_short = Column(String(50), nullable=True)
     away_team_crest = Column(String(500), nullable=True)
     

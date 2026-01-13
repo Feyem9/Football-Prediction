@@ -1,5 +1,5 @@
 """Schémas Pydantic pour les matchs et compétitions."""
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 from typing import Optional, List
 from datetime import datetime
 
@@ -58,8 +58,7 @@ class MatchResponse(BaseModel):
     # Prédiction (si disponible)
     prediction: Optional["PredictionSummary"] = None
     
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class MatchListResponse(BaseModel):
@@ -143,8 +142,7 @@ class PredictionResponse(BaseModel):
     analysis: Optional[str] = None
     bet_tip: Optional[str] = None
     
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 # Forward reference resolution

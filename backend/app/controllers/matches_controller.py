@@ -5,7 +5,7 @@ Contient toute la logique métier pour les endpoints matches.
 """
 from typing import Optional, List
 from datetime import datetime, timezone, timedelta
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 from fastapi import HTTPException
 
 from models.match import Match
@@ -73,7 +73,8 @@ def get_matches(
     limit: int = 20
 ) -> MatchListResponse:
     """Récupère la liste des matchs avec filtres."""
-    query = db.query(Match)
+    # Optimisation: joinedload pour éviter N+1 sur 'expert_prediction'
+    query = db.query(Match).options(joinedload(Match.expert_prediction))
     
     if competition:
         query = query.filter(Match.competition_code == competition.upper())
@@ -116,7 +117,8 @@ def get_today_matches(db: Session) -> MatchListResponse:
 
 def get_match_by_id(db: Session, match_id: int) -> MatchResponse:
     """Récupère un match par son ID."""
-    match = db.query(Match).filter(Match.id == match_id).first()
+    # Optimisation: joinedload
+    match = db.query(Match).options(joinedload(Match.expert_prediction)).filter(Match.id == match_id).first()
     if not match:
         raise HTTPException(status_code=404, detail="Match non trouvé")
     
