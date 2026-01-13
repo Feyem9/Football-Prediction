@@ -26,6 +26,11 @@ class PredictionService:
     # Bonus domicile (en % de probabilité)
     HOME_ADVANTAGE = 0.10
     
+    # Poids des différents facteurs
+    WEIGHT_STANDINGS = 0.50
+    WEIGHT_FORM = 0.30
+    WEIGHT_H2H = 0.20
+    
     def __init__(self, db: Session):
         """
         Initialise le service de prédictions.
@@ -162,6 +167,42 @@ class PredictionService:
         else:
             return "Les deux équipes marquent"
     
+    def _calculate_h2h_stats(self, matches: List[dict], home_team_id: int, away_team_id: int) -> Tuple[int, int, int]:
+        """Calcul les stats H2H à partir de la liste des matchs."""
+        h_wins = 0
+        a_wins = 0
+        draws = 0
+        
+        for m in matches:
+            if m.get("status") != "FINISHED":
+                continue
+                
+            score = m.get("score", {}).get("fullTime", {})
+            h_score = score.get("home")
+            a_score = score.get("away")
+            
+            if h_score is None or a_score is None:
+                continue
+                
+            match_home_id = m.get("homeTeam", {}).get("id")
+            match_away_id = m.get("awayTeam", {}).get("id")
+            
+            winner = None
+            if h_score > a_score:
+                winner = match_home_id
+            elif a_score > h_score:
+                winner = match_away_id
+            else:
+                draws += 1
+                continue
+                
+            if winner == home_team_id:
+                h_wins += 1
+            elif winner == away_team_id:
+                a_wins += 1
+                
+        return h_wins, a_wins, draws
+
     def _generate_analysis(
         self,
         home_team: str,
@@ -169,21 +210,11 @@ class PredictionService:
         home_entry: Optional[dict],
         away_entry: Optional[dict],
         home_goals: int,
-        away_goals: int
+        away_goals: int,
+        h2h_stats: Optional[Tuple[int, int, int]] = None
     ) -> str:
         """
         Génère une analyse textuelle de la prédiction.
-        
-        Args:
-            home_team: Nom équipe domicile
-            away_team: Nom équipe extérieur
-            home_entry: Données classement domicile
-            away_entry: Données classement extérieur
-            home_goals: Score prédit domicile
-            away_goals: Score prédit extérieur
-            
-        Returns:
-            Texte d'analyse
         """
         analysis_parts = []
         
@@ -201,12 +232,22 @@ class PredictionService:
             if home_pos < away_pos:
                 diff = away_pos - home_pos
                 analysis_parts.append(
-                    f"Avantage classement de {diff} places pour {home_team}."
+                    f"Avantage classement (+{diff} places) pour {home_team}."
                 )
             elif away_pos < home_pos:
                 diff = home_pos - away_pos
                 analysis_parts.append(
                     f"Attention, {away_team} est {diff} places devant au classement."
+                )
+
+        # Ajout analyse H2H
+        if h2h_stats:
+            h_wins, a_wins, draws = h2h_stats
+            total = h_wins + a_wins + draws
+            if total > 0:
+                analysis_parts.append(
+                    f"Historique H2H ({total} matchs) : {h_wins} victoires pour {home_team}, "
+                    f"{a_wins} pour {away_team} et {draws} nuls."
                 )
         
         if home_goals > away_goals:
@@ -283,9 +324,40 @@ class PredictionService:
             away_form = 0.5
             away_goals_avg = 1.2
         
-        # Combiner classement et forme
-        home_final = (home_strength * 0.6) + (home_form * 0.4)
-        away_final = (away_strength * 0.6) + (away_form * 0.4)
+        # Récupérer H2H
+        h2h_stats = None
+        home_h2h = 0.5
+        away_h2h = 0.5
+        
+        if match.external_id and match.home_team_id and match.away_team_id:
+            try:
+                # On récupère plus de matchs (limit=10) pour avoir un bon échantillon
+                h2h_data = await football_data_service.get_match_h2h(match.external_id, limit=10)
+                matches = h2h_data.get("matches", [])
+                
+                if matches:
+                    h_wins, a_wins, draws = self._calculate_h2h_stats(
+                        matches, match.home_team_id, match.away_team_id
+                    )
+                    h2h_stats = (h_wins, a_wins, draws)
+                    total = h_wins + a_wins + draws
+                    
+                    if total > 0:
+                        # Score entre 0 et 1 (Victoire = 1, Nul = 0.33)
+                        # On donne moins de points au nul pour le winner
+                        home_h2h = (h_wins * 3 + draws * 1) / (total * 3)
+                        away_h2h = (a_wins * 3 + draws * 1) / (total * 3)
+            except Exception:
+                pass
+
+        # Combiner classement, forme et H2H
+        home_final = (home_strength * self.WEIGHT_STANDINGS) + \
+                     (home_form * self.WEIGHT_FORM) + \
+                     (home_h2h * self.WEIGHT_H2H)
+                     
+        away_final = (away_strength * self.WEIGHT_STANDINGS) + \
+                     (away_form * self.WEIGHT_FORM) + \
+                     (away_h2h * self.WEIGHT_H2H)
         
         # Prédire le score
         home_goals, away_goals = self._predict_score(
@@ -302,7 +374,8 @@ class PredictionService:
         analysis = self._generate_analysis(
             match.home_team, match.away_team,
             home_entry, away_entry,
-            home_goals, away_goals
+            home_goals, away_goals,
+            h2h_stats
         )
         
         # Créer la prédiction

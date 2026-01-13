@@ -17,6 +17,7 @@ from schemas.match import (
     StandingsResponse,
     PredictionResponse
 )
+from schemas.h2h import H2HResponse
 from controllers import matches_controller
 from controllers import standings_controller
 
@@ -65,6 +66,12 @@ async def get_match(match_id: int, db: Session = Depends(get_db)):
 async def get_match_prediction(match_id: int, db: Session = Depends(get_db)):
     """Récupère la prédiction d'un match."""
     return await matches_controller.get_match_prediction(db, match_id)
+
+
+@router.get("/{match_id}/h2h", response_model=H2HResponse)
+async def get_match_h2h(match_id: int, db: Session = Depends(get_db)):
+    """Récupère l'historique des confrontations (H2H) pour un match."""
+    return await matches_controller.get_match_h2h(db, match_id)
 
 
 # =====================

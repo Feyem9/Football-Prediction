@@ -23,6 +23,7 @@ from schemas.match import (
 from services.football_api import football_data_service, FootballDataService
 from services.match_sync import MatchSyncService
 from services.prediction_service import PredictionService
+from schemas.h2h import H2HResponse
 
 
 # =====================
@@ -258,3 +259,25 @@ async def generate_predictions(db: Session, limit: int = 20) -> dict:
         return {"message": f"{count} prédictions générées"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Erreur de génération: {str(e)}")
+
+
+async def get_match_h2h(db: Session, match_id: int) -> H2HResponse:
+    """Récupère le Head-to-Head pour un match."""
+    # On commence par vérifier si le match existe en DB pour avoir l'ID externe
+    match = db.query(Match).filter(Match.id == match_id).first()
+    if not match or not match.external_id:
+        raise HTTPException(status_code=404, detail="Match non trouvé ou ID externe manquant")
+    
+    try:
+        data = await football_data_service.get_match_h2h(match.external_id)
+        return H2HResponse(**data)
+    except Exception as e:
+        raise HTTPException(status_code=502, detail=f"Erreur API lors de la récupération du H2H: {str(e)}")
+
+
+async def get_team_matches(team_id: int, limit: int = 10) -> dict:
+    """Récupère les derniers matchs d'une équipe."""
+    try:
+        return await football_data_service.get_team_matches(team_id, limit=limit)
+    except Exception as e:
+        raise HTTPException(status_code=502, detail=f"Erreur API: {str(e)}")

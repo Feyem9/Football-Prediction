@@ -244,6 +244,20 @@ class FootballDataService:
         """
         return await self._make_request(f"/matches/{match_id}")
     
+    async def get_match_h2h(self, match_id: int, limit: int = 10) -> dict:
+        """
+        Récupère l'historique des confrontations (Head-to-Head) pour un match.
+        
+        Args:
+            match_id: ID du match
+            limit: Nombre de confrontations passées à récupérer
+            
+        Returns:
+            Données H2H (victoires, nuls, derniers matchs)
+        """
+        params = {"limit": limit}
+        return await self._make_request(f"/matches/{match_id}/head2head", params)
+    
     # =====================
     # Équipes
     # =====================
