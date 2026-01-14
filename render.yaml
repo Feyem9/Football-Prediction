@@ -1,0 +1,67 @@
+# Render Blueprint - Pronoscore Backend
+# https://render.com/docs/blueprint-spec
+
+services:
+  # PostgreSQL Database
+  - type: pserv
+    name: pronoscore-db
+    env: docker
+    plan: free
+    dockerfilePath: backend/Dockerfile.postgres
+    disk:
+      name: pg-data
+      mountPath: /var/lib/postgresql/data
+      sizeGB: 1
+
+  # Redis for Celery
+  - type: redis
+    name: pronoscore-redis
+    plan: free
+    maxmemoryPolicy: allkeys-lru
+
+  # FastAPI Backend
+  - type: web
+    name: pronoscore-backend
+    env: docker
+    plan: free
+    dockerfilePath: backend/Dockerfile
+    dockerContext: backend
+    healthCheckPath: /health
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: pronoscore-db
+          property: connectionString
+      - key: REDIS_URL
+        fromService:
+          name: pronoscore-redis
+          type: redis
+          property: connectionString
+      - key: SECRET_KEY
+        generateValue: true
+      - key: FOOTBALL_DATA_API_KEY
+        sync: false
+      - key: ALGORITHM
+        value: HS256
+      - key: ACCESS_TOKEN_EXPIRE_MINUTES
+        value: 30
+      - key: REFRESH_TOKEN_EXPIRE_DAYS
+        value: 7
+      - key: PASSWORD_RESET_EXPIRE_HOURS
+        value: 1
+      - key: SMTP_HOST
+        sync: false
+      - key: SMTP_PORT
+        value: 587
+      - key: SMTP_USER
+        sync: false
+      - key: SMTP_PASSWORD
+        sync: false
+      - key: FROM_EMAIL
+        sync: false
+
+databases:
+  - name: pronoscore-db
+    plan: free
+    databaseName: pronoscore
+    user: pronoscore_user
