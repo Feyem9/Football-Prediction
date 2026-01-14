@@ -18,11 +18,14 @@ from schemas.match import (
     StandingsResponse,
     StandingEntry,
     PredictionSummary,
-    PredictionResponse
+    PredictionResponse,
+    CombinedPredictionResponse,
+    LogicPredictionResult
 )
 from services.football_api import football_data_service, FootballDataService
 from services.match_sync import MatchSyncService
 from services.prediction_service import PredictionService
+from services.multi_logic_engine import MultiLogicPredictionEngine
 from schemas.h2h import H2HResponse
 
 
@@ -283,3 +286,58 @@ async def get_team_matches(team_id: int, limit: int = 10) -> dict:
         return await football_data_service.get_team_matches(team_id, limit=limit)
     except Exception as e:
         raise HTTPException(status_code=502, detail=f"Erreur API: {str(e)}")
+
+
+async def get_combined_prediction(db: Session, match_id: int) -> CombinedPredictionResponse:
+    """
+    Génère une prédiction combinée utilisant les 3 logiques familiales.
+    
+    Logiques:
+    - Papa (35%): Position + Niveau championnat + Moyenne buts
+    - Grand Frère (35%): H2H + Loi domicile
+    - Ma Logique (30%): Forme 10 matchs + Consensus
+    """
+    # Récupérer le match
+    match = db.query(Match).filter(Match.id == match_id).first()
+    if not match:
+        raise HTTPException(status_code=404, detail="Match non trouvé")
+    
+    # Générer la prédiction combinée
+    engine = MultiLogicPredictionEngine(db)
+    combined = await engine.generate_combined_prediction(match)
+    
+    if not combined:
+        raise HTTPException(
+            status_code=422, 
+            detail="Impossible de générer une prédiction (données insuffisantes)"
+        )
+    
+    # Convertir les LogicResult en LogicPredictionResult
+    def logic_to_response(logic_result):
+        if not logic_result:
+            return None
+        return LogicPredictionResult(
+            home_win_prob=logic_result.home_win_prob,
+            draw_prob=logic_result.draw_prob,
+            away_win_prob=logic_result.away_win_prob,
+            predicted_home_goals=logic_result.predicted_home_goals,
+            predicted_away_goals=logic_result.predicted_away_goals,
+            confidence=logic_result.confidence,
+            bet_tip=logic_result.bet_tip,
+            analysis=logic_result.analysis
+        )
+    
+    return CombinedPredictionResponse(
+        match_id=match.id,
+        home_team=match.home_team,
+        away_team=match.away_team,
+        papa_prediction=logic_to_response(combined.papa_result),
+        grand_frere_prediction=logic_to_response(combined.grand_frere_result),
+        ma_logique_prediction=logic_to_response(combined.ma_logique_result),
+        final_home_goals=combined.final_home_goals,
+        final_away_goals=combined.final_away_goals,
+        final_confidence=combined.final_confidence,
+        final_bet_tip=combined.final_bet_tip,
+        consensus_level=combined.consensus_level,
+        all_agree=combined.all_agree
+    )

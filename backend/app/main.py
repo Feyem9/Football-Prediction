@@ -1,4 +1,11 @@
+"""
+Pronoscore API - Application de prédictions de matchs de football.
+
+Ce module initialise l'application FastAPI avec la documentation OpenAPI,
+les routes, et le scheduler pour les tâches automatiques.
+"""
 from fastapi import FastAPI, Depends
+from fastapi.openapi.utils import get_openapi
 from sqlalchemy.orm import Session
 from sqlalchemy import text
 from contextlib import asynccontextmanager
@@ -14,36 +21,128 @@ from core.scheduler import start_scheduler, stop_scheduler
 # Création des tables au démarrage (pour le développement)
 Base.metadata.create_all(bind=engine)
 
+
+# Configuration OpenAPI
+API_TITLE = "Pronoscore API"
+API_VERSION = "1.0.0"
+API_DESCRIPTION = """
+## 🏆 API de Prédictions de Matchs de Football
+
+Pronoscore est une API complète pour:
+- 📊 Consulter les matchs et classements de 7 compétitions majeures
+- 🎯 Obtenir des prédictions basées sur 3 logiques familiales
+- 👤 Gérer l'authentification utilisateur
+- 📈 Analyser les statistiques d'équipes
+
+### 🔐 Authentification
+L'API utilise **JWT (JSON Web Tokens)** pour l'authentification.
+Récupérez votre token via `/auth/login` puis passez-le dans le header:
+```
+Authorization: Bearer <votre_token>
+```
+
+### 🎲 Système de Prédiction
+Nos prédictions combinent 3 logiques:
+- **Papa (35%)** : Niveau du championnat + Position au classement
+- **Grand Frère (35%)** : H2H + Loi du domicile
+- **Ma Logique (30%)** : Forme sur 10 matchs + Consensus
+
+### 📌 Compétitions Supportées
+| Code | Compétition |
+|------|-------------|
+| PL | Premier League |
+| PD | La Liga |
+| BL1 | Bundesliga |
+| SA | Serie A |
+| FL1 | Ligue 1 |
+| CL | Champions League |
+| WC | World Cup |
+"""
+
+TAGS_METADATA = [
+    {
+        "name": "Auth",
+        "description": "🔐 Authentification et gestion des utilisateurs (register, login, logout).",
+    },
+    {
+        "name": "Profile",
+        "description": "👤 Gestion du profil utilisateur (avatar, infos).",
+    },
+    {
+        "name": "Matches",
+        "description": "⚽ Matchs, compétitions, et prédictions.",
+    },
+    {
+        "name": "Teams",
+        "description": "📊 Statistiques d'équipes.",
+    },
+]
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    """Gère le cycle de vie de l'application."""
     # Startup: Démarrer le scheduler
     start_scheduler()
     yield
     # Shutdown: Arrêter le scheduler
     stop_scheduler()
 
-app = FastAPI(title="Pronoscore API", lifespan=lifespan)
 
-# Enregistrer les routes
-app.include_router(auth_router, prefix="/api/v1")
-app.include_router(profile_router, prefix="/api/v1")
-app.include_router(matches_router, prefix="/api/v1")
-app.include_router(teams_router, prefix="/api/v1")
+app = FastAPI(
+    title=API_TITLE,
+    version=API_VERSION,
+    description=API_DESCRIPTION,
+    openapi_tags=TAGS_METADATA,
+    lifespan=lifespan,
+    docs_url="/docs",
+    redoc_url="/redoc",
+    contact={
+        "name": "Pronoscore Team",
+        "email": "support@pronoscore.app",
+    },
+    license_info={
+        "name": "MIT",
+    },
+)
 
-@app.get("/")
+# Enregistrer les routes avec tags
+app.include_router(auth_router, prefix="/api/v1", tags=["Auth"])
+app.include_router(profile_router, prefix="/api/v1", tags=["Profile"])
+app.include_router(matches_router, prefix="/api/v1", tags=["Matches"])
+app.include_router(teams_router, prefix="/api/v1", tags=["Teams"])
+
+
+@app.get("/", tags=["Health"])
 def read_root():
+    """
+    Point d'entrée de l'API.
+    
+    Retourne le statut et la version de l'API.
+    """
     return {
         "status": "online",
         "message": "Bienvenue sur l'API Pronoscore 2026",
-        "version": "1.0.0"
+        "version": API_VERSION,
+        "docs": "/docs",
+        "redoc": "/redoc",
     }
 
-@app.get("/health")
+
+@app.get("/health", tags=["Health"])
 def health_check(db: Session = Depends(get_db)):
-    """Vérifie l'état de santé de l'API et de la connexion à la base de données."""
+    """
+    Vérifie l'état de santé de l'API.
+    
+    Teste la connexion à la base de données et retourne le statut.
+    
+    Returns:
+        dict: Statut de l'API et de la base de données
+    """
     try:
         # Test simple de connexion à la base de données
         db.execute(text("SELECT 1"))
         return {"status": "healthy", "database": "connected"}
     except Exception as e:
         return {"status": "unhealthy", "database": str(e)}
+

@@ -16,20 +16,38 @@ class PredictionService:
     """
     Service pour générer des prédictions automatiques.
     
+    Intègre les 3 logiques de prédiction:
+    - Logique de Papa: Niveau des championnats, position, moyenne de buts
+    - Logique Grand Frère: H2H, loi du domicile, force relative
+    - Ma Logique: Double validation, consensus, 10 derniers matchs
+    
     L'algorithme prend en compte:
     - Position au classement
     - Différence de points
-    - Forme récente (5 derniers matchs)
-    - Avantage du terrain (domicile)
+    - Forme récente (10 derniers matchs)
+    - Avantage du terrain (domicile) avec loi Grand Frère
+    - Niveau relatif des championnats
     """
     
-    # Bonus domicile (en % de probabilité)
-    HOME_ADVANTAGE = 0.10
+    # Ranking des championnats (Logique de Papa)
+    LEAGUE_STRENGTH = {
+        "PL": 1.00,   # Premier League - Top niveau
+        "PD": 0.95,   # La Liga
+        "SA": 0.90,   # Serie A
+        "BL1": 0.90,  # Bundesliga
+        "FL1": 0.80,  # Ligue 1
+        "CL": 1.00,   # Champions League
+        "WC": 1.00,   # World Cup
+    }
     
-    # Poids des différents facteurs
-    WEIGHT_STANDINGS = 0.50
-    WEIGHT_FORM = 0.30
-    WEIGHT_H2H = 0.20
+    # Bonus domicile de base (en % de probabilité)
+    HOME_ADVANTAGE = 0.12
+    
+    # Poids des différents facteurs (Papa + Grand Frère = 70%)
+    WEIGHT_STANDINGS = 0.35   # Position au classement
+    WEIGHT_LEAGUE = 0.15      # Niveau du championnat (Papa)
+    WEIGHT_FORM = 0.25        # Forme récente (10 matchs)
+    WEIGHT_H2H = 0.25         # Confrontations directes (Grand Frère)
     
     def __init__(self, db: Session):
         """
@@ -80,12 +98,15 @@ class PredictionService:
                 return entry
         return None
     
-    def _calculate_form_score(self, form: str) -> float:
+    def _calculate_form_score(self, form: str, num_matches: int = 10) -> float:
         """
-        Calcule un score de forme basé sur les 5 derniers matchs.
+        Calcule un score de forme basé sur les derniers matchs.
+        
+        Logique de Papa + Ma Logique: Utilise les 10 derniers matchs.
         
         Args:
-            form: Forme sous format "W,D,L,W,W"
+            form: Forme sous format "W,D,L,W,W" ou liste de résultats
+            num_matches: Nombre de matchs à considérer (défaut: 10)
             
         Returns:
             Score entre 0 et 1
@@ -93,7 +114,10 @@ class PredictionService:
         if not form:
             return 0.5
         
-        results = form.split(",")
+        results = form.split(",") if isinstance(form, str) else form
+        # Limiter au nombre de matchs demandé
+        results = results[:num_matches]
+        
         score = 0
         for result in results:
             if result == "W":
@@ -102,8 +126,58 @@ class PredictionService:
                 score += 1
             # L = 0
         
-        # Max possible = 15 (5 victoires)
-        return score / 15
+        # Max possible = 3 * num_matches (toutes victoires)
+        max_score = 3 * len(results) if results else 1
+        return score / max_score
+    
+    def _get_league_strength(self, competition_code: str) -> float:
+        """
+        Retourne la force relative d'un championnat.
+        
+        Logique de Papa: Comparer le niveau des championnats.
+        
+        Args:
+            competition_code: Code de la compétition (PL, FL1, etc.)
+            
+        Returns:
+            Force entre 0 et 1 (1 = top niveau)
+        """
+        return self.LEAGUE_STRENGTH.get(competition_code, 0.75)
+    
+    def _calculate_home_advantage(
+        self, 
+        home_strength: float, 
+        away_strength: float,
+        is_home_team_stronger: bool
+    ) -> float:
+        """
+        Calcule l'avantage à domicile avec la loi de Grand Frère.
+        
+        Loi du domicile: Si un fort joue chez un moyen, 
+        le moyen à domicile peut obtenir le nul.
+        
+        Args:
+            home_strength: Force équipe domicile (0-1)
+            away_strength: Force équipe extérieur (0-1)
+            is_home_team_stronger: True si domicile est plus fort
+            
+        Returns:
+            Bonus domicile ajusté
+        """
+        base_advantage = self.HOME_ADVANTAGE
+        
+        # Loi de Grand Frère: Fort @ Moyen = avantage domicile renforcé
+        strength_diff = abs(home_strength - away_strength)
+        
+        if not is_home_team_stronger and strength_diff > 0.15:
+            # Le faible est à domicile contre un fort -> bonus renforcé
+            base_advantage *= 1.5  # +50% bonus
+        elif is_home_team_stronger and strength_diff < 0.10:
+            # Match équilibré -> bonus standard
+            pass
+        
+        return min(base_advantage, 0.20)  # Cap à 20%
+
     
     def _predict_score(
         self, 

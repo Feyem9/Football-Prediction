@@ -145,5 +145,46 @@ class PredictionResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
+class LogicPredictionResult(BaseModel):
+    """Résultat d'une logique individuelle."""
+    home_win_prob: float
+    draw_prob: float
+    away_win_prob: float
+    predicted_home_goals: int
+    predicted_away_goals: int
+    confidence: float
+    bet_tip: str
+    analysis: str
+
+
+class CombinedPredictionResponse(BaseModel):
+    """
+    Réponse de prédiction combinée des 3 logiques.
+    
+    Logiques:
+    - Papa (35%): Position + Niveau championnat + Buts
+    - Grand Frère (35%): H2H + Loi domicile
+    - Ma Logique (30%): Forme 10 matchs + Consensus
+    """
+    match_id: int
+    home_team: str
+    away_team: str
+    
+    # Résultats par logique
+    papa_prediction: Optional[LogicPredictionResult] = None
+    grand_frere_prediction: Optional[LogicPredictionResult] = None
+    ma_logique_prediction: Optional[LogicPredictionResult] = None
+    
+    # Prédiction finale combinée
+    final_home_goals: int
+    final_away_goals: int
+    final_confidence: float
+    final_bet_tip: str
+    
+    # Indicateur de consensus
+    consensus_level: str  # "FORT", "MOYEN", "FAIBLE"
+    all_agree: bool
+
+
 # Forward reference resolution
 MatchResponse.model_rebuild()

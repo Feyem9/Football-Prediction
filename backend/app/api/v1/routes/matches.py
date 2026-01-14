@@ -15,7 +15,8 @@ from schemas.match import (
     CompetitionResponse,
     CompetitionListResponse,
     StandingsResponse,
-    PredictionResponse
+    PredictionResponse,
+    CombinedPredictionResponse
 )
 from schemas.h2h import H2HResponse
 from controllers import matches_controller
@@ -103,6 +104,21 @@ async def get_match_prediction(match_id: int, db: Session = Depends(get_db)):
 async def get_match_h2h(match_id: int, db: Session = Depends(get_db)):
     """Récupère l'historique des confrontations (H2H) pour un match."""
     return await matches_controller.get_match_h2h(db, match_id)
+
+
+@router.get("/{match_id}/prediction/combined", response_model=CombinedPredictionResponse)
+async def get_combined_prediction(match_id: int, db: Session = Depends(get_db)):
+    """
+    Génère une prédiction combinée utilisant les 3 logiques familiales.
+    
+    Logiques:
+    - Papa (35%): Position + Niveau championnat + Moyenne buts
+    - Grand Frère (35%): H2H + Loi domicile
+    - Ma Logique (30%): Forme 10 matchs + Consensus
+    
+    Retourne la prédiction de chaque logique + la prédiction finale combinée.
+    """
+    return await matches_controller.get_combined_prediction(db, match_id)
 
 
 # =====================

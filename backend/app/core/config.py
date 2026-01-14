@@ -41,6 +41,9 @@ class Settings(BaseSettings):
     # Football-Data.org API
     football_data_api_key: str = os.getenv("FOOTBALL_DATA_API_KEY", "")
     
+    # API-Football (RapidAPI) pour cartons et corners
+    rapidapi_key: str = os.getenv("RAPIDAPI_KEY", "")
+    
     model_config = SettingsConfigDict(env_file=".env", case_sensitive=False)
 
 
