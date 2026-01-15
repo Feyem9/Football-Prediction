@@ -81,7 +81,7 @@ async def sync_all(
     Returns:
         Résumé de la synchronisation
     """
-    COMPETITIONS = ["PL", "BL1", "SA", "PD", "FL1"]
+    COMPETITIONS = ["PL", "BL1", "SA", "PD", "FL1", "CL"]  # + Champions League
     
     try:
         match_service = MatchSyncService(db)
