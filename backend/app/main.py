@@ -17,6 +17,7 @@ from api.v1.routes.auth import router as auth_router
 from api.v1.routes.profile import router as profile_router
 from api.v1.routes.matches import router as matches_router
 from api.v1.routes.teams import router as teams_router
+from api.v1.routes.admin import router as admin_router
 from core.scheduler import start_scheduler, stop_scheduler
 
 # Création des tables au démarrage (pour le développement)
@@ -121,6 +122,7 @@ app.include_router(auth_router, prefix="/api/v1", tags=["Auth"])
 app.include_router(profile_router, prefix="/api/v1", tags=["Profile"])
 app.include_router(matches_router, prefix="/api/v1", tags=["Matches"])
 app.include_router(teams_router, prefix="/api/v1", tags=["Teams"])
+app.include_router(admin_router, prefix="/api/v1", tags=["Admin"])
 
 
 @app.get("/", tags=["Health"])
