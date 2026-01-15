@@ -93,8 +93,15 @@ def get_matches(
             query = query.filter(Match.match_date >= start, Match.match_date < end)
         except ValueError:
             raise HTTPException(status_code=400, detail="Format date invalide. Utilisez YYYY-MM-DD")
+    else:
+        # Par défaut: matchs des 7 derniers jours + 30 prochains jours
+        now = datetime.now()
+        date_from = now - timedelta(days=7)
+        date_to = now + timedelta(days=30)
+        query = query.filter(Match.match_date >= date_from, Match.match_date <= date_to)
     
-    matches = query.order_by(Match.match_date).limit(limit).all()
+    # Trier par date décroissante (matchs récents/à venir en premier)
+    matches = query.order_by(Match.match_date.desc()).limit(limit).all()
     match_responses = [match_to_response(m) for m in matches]
     
     return MatchListResponse(count=len(match_responses), matches=match_responses)
