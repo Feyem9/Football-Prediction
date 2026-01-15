@@ -5,6 +5,7 @@ Ce module initialise l'application FastAPI avec la documentation OpenAPI,
 les routes, et le scheduler pour les tâches automatiques.
 """
 from fastapi import FastAPI, Depends
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.openapi.utils import get_openapi
 from sqlalchemy.orm import Session
 from sqlalchemy import text
@@ -104,6 +105,15 @@ app = FastAPI(
     license_info={
         "name": "MIT",
     },
+)
+
+# Configuration CORS pour permettre les requêtes depuis le frontend
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # En production, spécifier les domaines autorisés
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 # Enregistrer les routes avec tags
