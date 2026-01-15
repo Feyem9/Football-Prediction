@@ -9,7 +9,6 @@ from sqlalchemy.orm import Session
 from typing import Optional
 
 from core.database import get_db
-from core.config import settings
 from services.match_sync import MatchSyncService
 from services.standing_sync import StandingSyncService
 
@@ -18,16 +17,14 @@ router = APIRouter(prefix="/admin", tags=["Admin"])
 
 @router.post("/sync/matches")
 async def sync_matches(
-    days: int = 7,
+    competition: str = "PL",
     db: Session = Depends(get_db),
-    x_admin_key: Optional[str] = Header(None)
 ):
     """
-    Synchronise les matchs à venir depuis Football-Data.org.
+    Synchronise les matchs d'une compétition spécifique.
     
     Args:
-        days: Nombre de jours à synchroniser (défaut: 7)
-        x_admin_key: Clé d'administration (optionnelle pour la sécurité)
+        competition: Code de la compétition (PL, FL1, BL1, SA, PD)
     
     Returns:
         Nombre de matchs synchronisés
@@ -35,17 +32,13 @@ async def sync_matches(
     try:
         sync_service = MatchSyncService(db)
         
-        # Sync à venir
-        upcoming_count = await sync_service.sync_upcoming_matches(days=days)
-        
-        # Sync terminés (mise à jour des scores)
-        finished_count = await sync_service.sync_finished_matches()
+        # Sync par compétition au lieu de date
+        count = await sync_service.sync_competition_matches(competition)
         
         return {
             "success": True,
-            "message": f"Synchronisation terminée",
-            "upcoming_matches_synced": upcoming_count,
-            "finished_matches_updated": finished_count
+            "message": f"Synchronisation {competition} terminée",
+            "matches_synced": count
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Erreur de synchronisation: {str(e)}")
@@ -55,7 +48,6 @@ async def sync_matches(
 async def sync_standings(
     competition_code: str = "PL",
     db: Session = Depends(get_db),
-    x_admin_key: Optional[str] = Header(None)
 ):
     """
     Synchronise les classements d'une compétition.
@@ -82,37 +74,37 @@ async def sync_standings(
 @router.post("/sync/all")
 async def sync_all(
     db: Session = Depends(get_db),
-    x_admin_key: Optional[str] = Header(None)
 ):
     """
-    Synchronise toutes les données (matchs et classements).
+    Synchronise toutes les données (matchs et classements) par compétition.
     
     Returns:
         Résumé de la synchronisation
     """
+    COMPETITIONS = ["PL", "BL1", "SA", "PD", "FL1"]
+    
     try:
         match_service = MatchSyncService(db)
         standing_service = StandingSyncService(db)
         
         results = {
-            "matches": {
-                "upcoming": 0,
-                "finished": 0
-            },
+            "matches": {},
             "standings": {}
         }
         
-        # Sync matchs
-        results["matches"]["upcoming"] = await match_service.sync_upcoming_matches(days=14)
-        results["matches"]["finished"] = await match_service.sync_finished_matches()
-        
-        # Sync classements pour les principales compétitions
-        for comp in ["PL", "FL1", "BL1", "SA", "PD"]:
+        # Sync matchs et classements pour chaque compétition
+        for comp in COMPETITIONS:
             try:
-                count = await standing_service.sync_standings(comp)
-                results["standings"][comp] = count
-            except Exception:
-                results["standings"][comp] = 0
+                match_count = await match_service.sync_competition_matches(comp)
+                results["matches"][comp] = match_count
+            except Exception as e:
+                results["matches"][comp] = f"Error: {str(e)}"
+            
+            try:
+                standing_count = await standing_service.sync_standings(comp)
+                results["standings"][comp] = standing_count
+            except Exception as e:
+                results["standings"][comp] = f"Error: {str(e)}"
         
         return {
             "success": True,
