@@ -22,6 +22,29 @@ logger = logging.getLogger(__name__)
 
 
 @dataclass
+class LogicEvidence:
+    """Preuves utilisées par une logique de prédiction."""
+    # Papa - classement
+    home_position: int = 0
+    away_position: int = 0
+    home_points: int = 0
+    away_points: int = 0
+    league_level: float = 0.0
+    # Grand Frère - domicile & H2H
+    home_advantage: float = 0.0
+    home_strength: str = "MOYEN"
+    away_strength: str = "MOYEN"
+    h2h_home_wins: int = 0
+    h2h_away_wins: int = 0
+    h2h_draws: int = 0
+    # Ma Logique - forme & buts
+    home_form: float = 0.0
+    away_form: float = 0.0
+    home_avg_goals: float = 0.0
+    away_avg_goals: float = 0.0
+
+
+@dataclass
 class LogicResult:
     """Résultat d'une logique de prédiction."""
     home_win_prob: float      # Probabilité victoire domicile (0-1)
@@ -32,6 +55,7 @@ class LogicResult:
     confidence: float         # Confiance dans cette prédiction (0-1)
     bet_tip: str              # Conseil de pari
     analysis: str             # Analyse textuelle
+    evidence: LogicEvidence = None  # Preuves utilisées
 
 
 @dataclass
@@ -178,6 +202,17 @@ class MultiLogicPredictionEngine:
                 f"Niveau ligue: {league_strength:.0%}"
             )
             
+            # Créer les preuves
+            evidence = LogicEvidence(
+                home_position=home_standing.position,
+                away_position=away_standing.position,
+                home_points=home_standing.points,
+                away_points=away_standing.points,
+                league_level=league_strength,
+                home_avg_goals=home_goals_avg,
+                away_avg_goals=away_goals_avg,
+            )
+            
             return LogicResult(
                 home_win_prob=home_win_prob,
                 draw_prob=draw_prob,
@@ -186,7 +221,8 @@ class MultiLogicPredictionEngine:
                 predicted_away_goals=away_goals,
                 confidence=confidence,
                 bet_tip=bet_tip,
-                analysis=analysis
+                analysis=analysis,
+                evidence=evidence
             )
             
         except Exception as e:
@@ -289,6 +325,22 @@ class MultiLogicPredictionEngine:
                 f"Avantage domicile: {home_advantage:.0%}"
             )
             
+            # Créer les preuves
+            def strength_to_label(s: float) -> str:
+                if s > 0.7: return "FORT"
+                elif s > 0.4: return "MOYEN"
+                return "FAIBLE"
+            
+            evidence = LogicEvidence(
+                home_advantage=home_advantage,
+                home_strength=strength_to_label(home_strength),
+                away_strength=strength_to_label(away_strength),
+                home_position=home_standing.position,
+                away_position=away_standing.position,
+                home_avg_goals=home_goals_avg,
+                away_avg_goals=away_goals_avg,
+            )
+            
             return LogicResult(
                 home_win_prob=home_win_prob,
                 draw_prob=draw_prob,
@@ -297,7 +349,8 @@ class MultiLogicPredictionEngine:
                 predicted_away_goals=away_goals,
                 confidence=confidence,
                 bet_tip=bet_tip,
-                analysis=analysis
+                analysis=analysis,
+                evidence=evidence
             )
             
         except Exception as e:
@@ -398,6 +451,14 @@ class MultiLogicPredictionEngine:
                 f"Moy. buts: {home_goals_avg:.1f} vs {away_goals_avg:.1f}"
             )
             
+            # Créer les preuves
+            evidence = LogicEvidence(
+                home_form=home_form_score,
+                away_form=away_form_score,
+                home_avg_goals=home_goals_avg,
+                away_avg_goals=away_goals_avg,
+            )
+            
             return LogicResult(
                 home_win_prob=home_win_prob,
                 draw_prob=draw_prob,
@@ -406,7 +467,8 @@ class MultiLogicPredictionEngine:
                 predicted_away_goals=away_goals,
                 confidence=confidence,
                 bet_tip=bet_tip,
-                analysis=analysis
+                analysis=analysis,
+                evidence=evidence
             )
             
         except Exception as e:

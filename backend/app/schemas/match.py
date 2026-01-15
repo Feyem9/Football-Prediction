@@ -145,6 +145,28 @@ class PredictionResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
+class LogicEvidenceSchema(BaseModel):
+    """Preuves utilisées par une logique de prédiction."""
+    # Papa - classement
+    home_position: int = 0
+    away_position: int = 0
+    home_points: int = 0
+    away_points: int = 0
+    league_level: float = 0.0
+    # Grand Frère - domicile & H2H
+    home_advantage: float = 0.0
+    home_strength: str = "MOYEN"
+    away_strength: str = "MOYEN"
+    h2h_home_wins: int = 0
+    h2h_away_wins: int = 0
+    h2h_draws: int = 0
+    # Ma Logique - forme & buts
+    home_form: float = 0.0
+    away_form: float = 0.0
+    home_avg_goals: float = 0.0
+    away_avg_goals: float = 0.0
+
+
 class LogicPredictionResult(BaseModel):
     """Résultat d'une logique individuelle."""
     home_win_prob: float
@@ -155,6 +177,7 @@ class LogicPredictionResult(BaseModel):
     confidence: float
     bet_tip: str
     analysis: str
+    evidence: Optional[LogicEvidenceSchema] = None
 
 
 class CombinedPredictionResponse(BaseModel):

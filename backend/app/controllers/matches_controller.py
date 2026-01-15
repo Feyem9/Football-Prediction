@@ -20,7 +20,8 @@ from schemas.match import (
     PredictionSummary,
     PredictionResponse,
     CombinedPredictionResponse,
-    LogicPredictionResult
+    LogicPredictionResult,
+    LogicEvidenceSchema
 )
 from services.football_api import football_data_service, FootballDataService
 from services.match_sync import MatchSyncService
@@ -323,6 +324,29 @@ async def get_combined_prediction(db: Session, match_id: int) -> CombinedPredict
     def logic_to_response(logic_result):
         if not logic_result:
             return None
+        
+        # Convertir evidence dataclass en schema
+        evidence_schema = None
+        if logic_result.evidence:
+            ev = logic_result.evidence
+            evidence_schema = LogicEvidenceSchema(
+                home_position=ev.home_position,
+                away_position=ev.away_position,
+                home_points=ev.home_points,
+                away_points=ev.away_points,
+                league_level=ev.league_level,
+                home_advantage=ev.home_advantage,
+                home_strength=ev.home_strength,
+                away_strength=ev.away_strength,
+                h2h_home_wins=ev.h2h_home_wins,
+                h2h_away_wins=ev.h2h_away_wins,
+                h2h_draws=ev.h2h_draws,
+                home_form=ev.home_form,
+                away_form=ev.away_form,
+                home_avg_goals=ev.home_avg_goals,
+                away_avg_goals=ev.away_avg_goals,
+            )
+        
         return LogicPredictionResult(
             home_win_prob=logic_result.home_win_prob,
             draw_prob=logic_result.draw_prob,
@@ -331,7 +355,8 @@ async def get_combined_prediction(db: Session, match_id: int) -> CombinedPredict
             predicted_away_goals=logic_result.predicted_away_goals,
             confidence=logic_result.confidence,
             bet_tip=logic_result.bet_tip,
-            analysis=logic_result.analysis
+            analysis=logic_result.analysis,
+            evidence=evidence_schema
         )
     
     return CombinedPredictionResponse(
