@@ -1,7 +1,7 @@
 """Add home_goals_avg and away_goals_avg to expert_predictions
 
 Revision ID: add_goals_avg_001
-Revises: 
+Revises: db5ca270b2d4
 Create Date: 2026-01-16
 """
 from alembic import op
@@ -9,7 +9,7 @@ import sqlalchemy as sa
 
 # revision identifiers
 revision = 'add_goals_avg_001'
-down_revision = None
+down_revision = 'db5ca270b2d4'
 branch_labels = None
 depends_on = None
 
