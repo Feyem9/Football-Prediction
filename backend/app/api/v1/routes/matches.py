@@ -78,8 +78,8 @@ async def get_upcoming_matches(
     limit: int = Query(20, ge=1, le=50),
     db: Session = Depends(get_db)
 ):
-    """Récupère les prochains matchs programmés avec prédictions combinées."""
-    return await matches_controller.get_upcoming_matches(db, limit)
+    """Récupère les prochains matchs programmés."""
+    return matches_controller.get_upcoming_matches(db, limit)
 
 
 @router.get("/today", response_model=MatchListResponse)
