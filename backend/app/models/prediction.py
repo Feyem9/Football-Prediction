@@ -19,9 +19,9 @@ class ExpertPrediction(Base):
     # Niveau de confiance (ex: 0.85 pour 85%)
     confidence = Column(Float, default=0.5)
     
-    # TODO: Ajouter après migration sur Render
-    # home_goals_avg = Column(Float, default=0.0)  # Moyenne buts domicile
-    # away_goals_avg = Column(Float, default=0.0)  # Moyenne buts extérieur
+    # Moyenne de buts par match pour chaque équipe
+    home_goals_avg = Column(Float, default=0.0)  # Moyenne buts domicile
+    away_goals_avg = Column(Float, default=0.0)  # Moyenne buts extérieur
     
     # L'analyse détaillée expliquant pourquoi ce pronostic
     analysis = Column(String, nullable=True)
