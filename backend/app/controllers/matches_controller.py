@@ -43,8 +43,8 @@ def match_to_response(match: Match) -> MatchResponse:
             away_score_forecast=match.expert_prediction.away_score_forecast,
             confidence=match.expert_prediction.confidence,
             bet_tip=match.expert_prediction.bet_tip,
-            home_goals_avg=match.expert_prediction.home_goals_avg,
-            away_goals_avg=match.expert_prediction.away_goals_avg
+            home_goals_avg=getattr(match.expert_prediction, 'home_goals_avg', None),
+            away_goals_avg=getattr(match.expert_prediction, 'away_goals_avg', None)
         )
     
     return MatchResponse(
