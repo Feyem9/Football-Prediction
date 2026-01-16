@@ -34,16 +34,24 @@ from schemas.h2h import H2HResponse
 # Helpers
 # =====================
 
-def match_to_response(match: Match) -> MatchResponse:
-    """Convertit un Match en MatchResponse avec prédiction."""
+async def match_to_response_with_prediction(match: Match, db: Session) -> MatchResponse:
+    """Convertit un Match en MatchResponse avec prédiction combinée (3 logiques)."""
     prediction = None
-    if match.expert_prediction:
-        prediction = PredictionSummary(
-            home_score_forecast=match.expert_prediction.home_score_forecast,
-            away_score_forecast=match.expert_prediction.away_score_forecast,
-            confidence=match.expert_prediction.confidence,
-            bet_tip=match.expert_prediction.bet_tip
-        )
+    
+    # Générer la prédiction combinée pour les matchs à venir
+    if match.status in ('SCHEDULED', 'TIMED'):
+        try:
+            engine = MultiLogicPredictionEngine(db)
+            combined = await engine.generate_combined_prediction(match)
+            if combined:
+                prediction = PredictionSummary(
+                    home_score_forecast=combined.final_home_goals,
+                    away_score_forecast=combined.final_away_goals,
+                    confidence=combined.final_confidence,
+                    bet_tip=combined.final_bet_tip.split(' - ')[0]  # Sans "Consensus: X"
+                )
+        except Exception as e:
+            logger.warning(f"Erreur prédiction match {match.id}: {e}")
     
     return MatchResponse(
         id=match.id,
@@ -62,6 +70,28 @@ def match_to_response(match: Match) -> MatchResponse:
         score_home=match.score_home,
         score_away=match.score_away,
         prediction=prediction
+    )
+
+
+def match_to_response(match: Match) -> MatchResponse:
+    """Convertit un Match en MatchResponse (sans prédiction, rapide)."""
+    return MatchResponse(
+        id=match.id,
+        external_id=match.external_id,
+        competition_code=match.competition_code,
+        competition_name=match.competition_name,
+        matchday=match.matchday,
+        home_team=match.home_team,
+        home_team_short=match.home_team_short,
+        home_team_crest=match.home_team_crest,
+        away_team=match.away_team,
+        away_team_short=match.away_team_short,
+        away_team_crest=match.away_team_crest,
+        match_date=match.match_date,
+        status=match.status,
+        score_home=match.score_home,
+        score_away=match.score_away,
+        prediction=None
     )
 
 
@@ -108,11 +138,16 @@ def get_matches(
     return MatchListResponse(count=len(match_responses), matches=match_responses)
 
 
-def get_upcoming_matches(db: Session, limit: int = 20) -> MatchListResponse:
-    """Récupère les prochains matchs programmés."""
+async def get_upcoming_matches(db: Session, limit: int = 20) -> MatchListResponse:
+    """Récupère les prochains matchs programmés avec prédictions combinées."""
     sync_service = MatchSyncService(db)
     matches = sync_service.get_upcoming_matches(limit=limit)
-    match_responses = [match_to_response(m) for m in matches]
+    
+    # Générer les prédictions combinées pour chaque match
+    match_responses = []
+    for m in matches:
+        response = await match_to_response_with_prediction(m, db)
+        match_responses.append(response)
     
     return MatchListResponse(count=len(match_responses), matches=match_responses)
 
