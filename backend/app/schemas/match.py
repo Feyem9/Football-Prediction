@@ -130,6 +130,8 @@ class PredictionSummary(BaseModel):
     away_score_forecast: int
     confidence: float
     bet_tip: Optional[str] = None
+    home_goals_avg: Optional[float] = None  # Moyenne buts domicile
+    away_goals_avg: Optional[float] = None  # Moyenne buts extérieur
 
 
 class PredictionResponse(BaseModel):
@@ -139,6 +141,8 @@ class PredictionResponse(BaseModel):
     home_score_forecast: int
     away_score_forecast: int
     confidence: float
+    home_goals_avg: Optional[float] = None  # Moyenne buts domicile
+    away_goals_avg: Optional[float] = None  # Moyenne buts extérieur
     analysis: Optional[str] = None
     bet_tip: Optional[str] = None
     
