@@ -265,13 +265,23 @@ async def sync_matches(db: Session, competition: Optional[str] = None) -> dict:
         raise HTTPException(status_code=500, detail=f"Erreur de synchronisation: {str(e)}")
 
 
-async def generate_predictions(db: Session, limit: int = 20) -> dict:
+async def generate_predictions(db: Session, limit: int = 20, force: bool = False) -> dict:
     """Génère des prédictions pour les matchs à venir."""
     prediction_service = PredictionService(db)
     
     try:
+        # Si force=True, supprimer les prédictions existantes
+        if force:
+            from models.prediction import ExpertPrediction
+            deleted = db.query(ExpertPrediction).delete()
+            db.commit()
+            logger.info(f"🗑️ {deleted} prédictions supprimées (force=True)")
+        
         count = await prediction_service.generate_predictions_for_upcoming(limit=limit)
-        return {"message": f"{count} prédictions générées"}
+        msg = f"{count} prédictions générées"
+        if force:
+            msg += f" (après suppression de {deleted} anciennes)"
+        return {"message": msg}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Erreur de génération: {str(e)}")
 

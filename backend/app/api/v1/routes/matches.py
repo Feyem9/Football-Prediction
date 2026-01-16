@@ -177,7 +177,8 @@ async def sync_standings(
 @router.post("/predictions/generate", tags=["Admin"])
 async def generate_predictions(
     limit: int = Query(20, ge=1, le=100),
+    force: bool = Query(False, description="Si True, supprime les anciennes prédictions avant de régénérer"),
     db: Session = Depends(get_db)
 ):
-    """Génère des prédictions pour les matchs à venir."""
-    return await matches_controller.generate_predictions(db, limit)
+    """Génère des prédictions pour les matchs à venir. force=True pour régénérer toutes."""
+    return await matches_controller.generate_predictions(db, limit, force)
