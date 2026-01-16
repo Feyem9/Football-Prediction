@@ -458,8 +458,9 @@ class PredictionService:
             home_score_forecast=home_goals,
             away_score_forecast=away_goals,
             confidence=round(confidence, 2),
-            home_goals_avg=round(home_goals_avg, 2),  # Moyenne buts domicile
-            away_goals_avg=round(away_goals_avg, 2),  # Moyenne buts extérieur
+            # TODO: Ajouter après migration sur Render
+            # home_goals_avg=round(home_goals_avg, 2),
+            # away_goals_avg=round(away_goals_avg, 2),
             analysis=analysis,
             bet_tip=bet_tip
         )
