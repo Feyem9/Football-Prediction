@@ -86,8 +86,6 @@ async def lifespan(app: FastAPI):
     """Gère le cycle de vie de l'application."""
     # Auto-migration: Ajouter colonnes si elles n'existent pas
     try:
-        from db.session import engine
-        from sqlalchemy import text
         with engine.connect() as conn:
             # Vérifier et ajouter home_goals_avg si manquant
             result = conn.execute(text("""
@@ -98,9 +96,9 @@ async def lifespan(app: FastAPI):
                 conn.execute(text("ALTER TABLE expert_predictions ADD COLUMN home_goals_avg FLOAT DEFAULT 0.0"))
                 conn.execute(text("ALTER TABLE expert_predictions ADD COLUMN away_goals_avg FLOAT DEFAULT 0.0"))
                 conn.commit()
-                logger.info("✅ Auto-migration: colonnes avg_goals ajoutées")
+                print("✅ Auto-migration: colonnes avg_goals ajoutées")
     except Exception as e:
-        logger.warning(f"Auto-migration ignorée: {e}")
+        print(f"⚠️ Auto-migration ignorée: {e}")
     
     # Startup: Démarrer le scheduler
     start_scheduler()
