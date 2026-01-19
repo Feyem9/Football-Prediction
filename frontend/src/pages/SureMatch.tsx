@@ -1,52 +1,112 @@
 /**
- * SureMatch Page - Match Sûr du Jour
- * Affiche le match le plus fiable avec toutes les explications
+ * SureMatch Page - Matchs Sûrs du Jour
+ * Affiche 4 catégories de matchs sûrs avec explications simples
  */
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { getMatches, getCombinedPrediction } from '../lib/api';
 import type { Match, CombinedPrediction, LogicPrediction } from '../types';
 
+interface SureMatchCategory {
+  type: 'victory' | 'goals' | 'draw' | 'exact';
+  title: string;
+  icon: string;
+  match: Match | null;
+  prediction: CombinedPrediction | null;
+  explanation: string;
+}
+
 export default function SureMatch() {
-  const [sureMatch, setSureMatch] = useState<Match | null>(null);
-  const [prediction, setPrediction] = useState<CombinedPrediction | null>(null);
+  const [categories, setCategories] = useState<SureMatchCategory[]>([
+    { type: 'victory', title: 'Victoire Sûre', icon: '🏆', match: null, prediction: null, explanation: '' },
+    { type: 'goals', title: 'Nombre de Buts', icon: '⚽', match: null, prediction: null, explanation: '' },
+    { type: 'draw', title: 'Match Nul', icon: '🤝', match: null, prediction: null, explanation: '' },
+    { type: 'exact', title: 'Score Exact', icon: '🎯', match: null, prediction: null, explanation: '' },
+  ]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<'victory' | 'goals' | 'draw' | 'exact'>('victory');
 
   useEffect(() => {
-    const fetchSureMatch = async () => {
+    const fetchSureMatches = async () => {
       try {
-        // Récupérer tous les matchs à venir
         const data = await getMatches({ limit: 50 });
+        console.log('📊 Matchs reçus:', data.matches.length, data.matches.slice(0, 3));
         
-        // Trouver le match avec la plus haute confiance
-        let bestMatch: Match | null = null;
-        let bestConfidence = 0;
+        // Créer les catégories localement pour éviter le warning eslint
+        const newCategories: SureMatchCategory[] = [
+          { type: 'victory', title: 'Victoire Sûre', icon: '🏆', match: null, prediction: null, explanation: '' },
+          { type: 'goals', title: 'Nombre de Buts', icon: '⚽', match: null, prediction: null, explanation: '' },
+          { type: 'draw', title: 'Match Nul', icon: '🤝', match: null, prediction: null, explanation: '' },
+          { type: 'exact', title: 'Score Exact', icon: '🎯', match: null, prediction: null, explanation: '' },
+        ];
         
         for (const match of data.matches) {
           const conf = match.prediction?.confidence || 0;
-          if (conf > bestConfidence) {
-            bestConfidence = conf;
-            bestMatch = match;
+          const tip = match.prediction?.bet_tip || '';
+          const homeScore = match.prediction?.home_score_forecast ?? 0;
+          const awayScore = match.prediction?.away_score_forecast ?? 0;
+          
+          // Victoire Sûre - Match avec victoire claire
+          if (tip.includes('Victoire') && conf > 0.75) {
+            const cat = newCategories.find(c => c.type === 'victory');
+            if (cat && (!cat.match || conf > (cat.match.prediction?.confidence || 0))) {
+              cat.match = match;
+            }
+          }
+          
+          // Nombre de Buts - Plus/Moins 2.5
+          if ((tip.includes('Plus de 2.5') || tip.includes('Moins de 2.5')) && conf > 0.6) {
+            const cat = newCategories.find(c => c.type === 'goals');
+            if (cat && (!cat.match || conf > (cat.match.prediction?.confidence || 0))) {
+              cat.match = match;
+            }
+          }
+          
+          // Match Nul - homeScore === awayScore
+          if (homeScore === awayScore && conf > 0.5) {
+            const cat = newCategories.find(c => c.type === 'draw');
+            if (cat && (!cat.match || conf > (cat.match.prediction?.confidence || 0))) {
+              cat.match = match;
+            }
+          }
+          
+          // Score Exact - Haute confiance
+          if (conf > 0.8) {
+            const cat = newCategories.find(c => c.type === 'exact');
+            if (cat && (!cat.match || conf > (cat.match.prediction?.confidence || 0))) {
+              cat.match = match;
+            }
           }
         }
         
-        if (bestMatch) {
-          setSureMatch(bestMatch);
-          
-          // Récupérer la prédiction détaillée
-          const pred = await getCombinedPrediction(bestMatch.id);
-          setPrediction(pred);
+        // Debug: afficher les matchs trouvés
+        console.log('🏆 Catégories après sélection:', newCategories.map(c => ({
+          type: c.type,
+          hasMatch: !!c.match,
+          matchName: c.match ? `${c.match.home_team} vs ${c.match.away_team}` : null
+        })));
+        
+        // Récupérer les prédictions détaillées
+        for (const cat of newCategories) {
+          if (cat.match) {
+            try {
+              cat.prediction = await getCombinedPrediction(cat.match.id);
+              console.log(`✅ Prediction loaded for ${cat.type}`);
+            } catch (err) {
+              console.error(`❌ Error loading prediction for ${cat.type}:`, err);
+            }
+          }
         }
+        
+        setCategories(newCategories);
       } catch (err) {
-        setError('Erreur lors du chargement');
-        console.error(err);
+        console.error('❌ Erreur globale:', err);
       } finally {
         setLoading(false);
       }
     };
     
-    fetchSureMatch();
+    fetchSureMatches();
   }, []);
 
   const today = new Date().toLocaleDateString('fr-FR', {
@@ -56,86 +116,7 @@ export default function SureMatch() {
     year: 'numeric'
   });
 
-  // Critères de sélection du match sûr
-  const getSurenessCriteria = () => {
-    if (!prediction || !sureMatch) return [];
-    
-    const criteria = [];
-    const pred = sureMatch.prediction;
-    const conf = pred?.confidence || 0;
-    
-    // Critère 1: Confiance élevée
-    if (conf >= 0.7) {
-      criteria.push({
-        icon: '✅',
-        title: 'Confiance Élevée',
-        description: `Score de confiance de ${Math.round(conf * 100)}% - Supérieur au seuil de 70%`,
-        score: conf
-      });
-    }
-    
-    // Critère 2: Consensus des logiques
-    if (prediction.all_agree) {
-      criteria.push({
-        icon: '🤝',
-        title: 'Consensus Total',
-        description: 'Les 3 logiques familiales sont d\'accord sur le résultat',
-        score: 1
-      });
-    } else if (prediction.consensus_level === 'FORT') {
-      criteria.push({
-        icon: '📊',
-        title: 'Consensus Fort',
-        description: '2 logiques sur 3 sont d\'accord',
-        score: 0.8
-      });
-    }
-    
-    // Critère 3: Différence de niveau
-    const papaEvidence = prediction.papa_prediction?.evidence;
-    if (papaEvidence) {
-      const homePos = papaEvidence.home_position || 10;
-      const awayPos = papaEvidence.away_position || 10;
-      const posDiff = Math.abs(homePos - awayPos);
-      if (posDiff >= 8) {
-        criteria.push({
-          icon: '📈',
-          title: 'Grande Différence de Classement',
-          description: `${posDiff} places d'écart au classement`,
-          score: posDiff / 20
-        });
-      }
-    }
-    
-    // Critère 4: Avantage domicile fort
-    const gfEvidence = prediction.grand_frere_prediction?.evidence;
-    if (gfEvidence && gfEvidence.home_advantage && gfEvidence.home_advantage > 0.15) {
-      criteria.push({
-        icon: '🏠',
-        title: 'Fort Avantage Domicile',
-        description: `Bonus domicile de ${Math.round((gfEvidence.home_advantage || 0) * 100)}%`,
-        score: gfEvidence.home_advantage
-      });
-    }
-    
-    // Critère 5: Forme récente
-    const maLogiqueEvidence = prediction.ma_logique_prediction?.evidence;
-    if (maLogiqueEvidence) {
-      const homeForm = maLogiqueEvidence.home_form || 0.5;
-      const awayForm = maLogiqueEvidence.away_form || 0.5;
-      const formDiff = Math.abs(homeForm - awayForm);
-      if (formDiff > 0.3) {
-        criteria.push({
-          icon: '🔥',
-          title: 'Grande Différence de Forme',
-          description: `Écart de forme significatif: ${Math.round(formDiff * 100)}%`,
-          score: formDiff
-        });
-      }
-    }
-    
-    return criteria;
-  };
+  const activeCategory = categories.find(c => c.type === activeTab);
 
   if (loading) {
     return (
@@ -148,30 +129,6 @@ export default function SureMatch() {
     );
   }
 
-  if (error || !sureMatch) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <span className="text-6xl mb-4 block">😔</span>
-          <p className="text-red-400">{error || 'Aucun match sûr trouvé'}</p>
-          <Link to="/" className="mt-4 inline-block px-6 py-3 rounded-xl bg-blue-500 text-white">
-            Retour à l'accueil
-          </Link>
-        </div>
-      </div>
-    );
-  }
-
-  const criteria = getSurenessCriteria();
-  const pred = sureMatch.prediction;
-  const matchDate = new Date(sureMatch.match_date).toLocaleDateString('fr-FR', {
-    weekday: 'long',
-    day: 'numeric',
-    month: 'long',
-    hour: '2-digit',
-    minute: '2-digit'
-  });
-
   return (
     <div className="min-h-screen pb-16">
       {/* Hero */}
@@ -180,225 +137,278 @@ export default function SureMatch() {
         <div className="relative container mx-auto px-4 text-center">
           <span className="text-5xl mb-4 block">🎯</span>
           <h1 className="text-3xl md:text-5xl font-black text-white mb-2">
-            Match <span className="text-yellow-400">Sûr</span> du Jour
+            Matchs <span className="text-yellow-400">Sûrs</span> du Jour
           </h1>
           <p className="text-slate-400 capitalize">{today}</p>
         </div>
       </div>
 
-      <div className="container mx-auto px-4 max-w-4xl">
-        {/* Match Card Principal */}
-        <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-yellow-900/30 via-slate-900 to-slate-900 border-2 border-yellow-500/50 p-8 mb-8">
-          {/* Badge Confiance */}
-          <div className="absolute top-4 right-4">
-            <div className="px-4 py-2 rounded-full bg-yellow-500 text-black font-black text-lg">
-              {Math.round((pred?.confidence || 0) * 100)}% SÛR
-            </div>
-          </div>
-
-          {/* Compétition */}
-          <div className="text-center mb-6">
-            <span className="text-sm font-bold px-4 py-2 rounded-full bg-slate-700 text-slate-300">
-              {sureMatch.competition_name} • J{sureMatch.matchday}
-            </span>
-            <p className="text-slate-500 text-sm mt-2">{matchDate}</p>
-          </div>
-
-          {/* Teams & Score */}
-          <div className="flex items-center justify-center gap-8 mb-8">
-            <div className="text-center flex-1">
-              <p className="text-2xl md:text-3xl font-black text-white">
-                {sureMatch.home_team}
-              </p>
-              <p className="text-slate-500 text-sm">Domicile</p>
-            </div>
-
-            <div className="flex items-center gap-4 px-8 py-4 rounded-2xl bg-yellow-500/20 border-2 border-yellow-500/50">
-              <span className="text-5xl font-black text-yellow-400">{pred?.home_score_forecast}</span>
-              <span className="text-3xl text-yellow-300">-</span>
-              <span className="text-5xl font-black text-yellow-400">{pred?.away_score_forecast}</span>
-            </div>
-
-            <div className="text-center flex-1">
-              <p className="text-2xl md:text-3xl font-black text-white">
-                {sureMatch.away_team}
-              </p>
-              <p className="text-slate-500 text-sm">Extérieur</p>
-            </div>
-          </div>
-
-          {/* Conseil */}
-          <div className="text-center">
-            <span className="text-2xl font-bold text-yellow-400">
-              🎯 {pred?.bet_tip}
-            </span>
-          </div>
+      <div className="container mx-auto px-4 max-w-5xl">
+        {/* Tabs - 4 catégories */}
+        <div className="flex flex-wrap justify-center gap-2 mb-8">
+          {categories.map(cat => (
+            <button
+              key={cat.type}
+              onClick={() => setActiveTab(cat.type)}
+              className={`px-6 py-3 rounded-xl font-bold transition-all ${
+                activeTab === cat.type
+                  ? 'bg-yellow-500 text-black scale-105'
+                  : 'bg-slate-800 text-slate-400 hover:bg-slate-700'
+              }`}
+            >
+              <span className="mr-2">{cat.icon}</span>
+              {cat.title}
+            </button>
+          ))}
         </div>
 
-        {/* Pourquoi ce match est sûr */}
-        <section className="mb-8">
-          <h2 className="text-2xl font-bold text-white mb-6 flex items-center gap-3">
-            <span className="text-3xl">🔍</span>
-            Pourquoi ce match est SÛR ?
-          </h2>
-
-          <div className="grid gap-4">
-            {criteria.map((c, i) => (
-              <div 
-                key={i}
-                className="p-5 rounded-2xl bg-slate-800/70 border border-slate-700 hover:border-yellow-500/50 transition-colors"
-              >
-                <div className="flex items-start gap-4">
-                  <span className="text-3xl">{c.icon}</span>
-                  <div className="flex-1">
-                    <h3 className="font-bold text-yellow-400 text-lg">{c.title}</h3>
-                    <p className="text-slate-400">{c.description}</p>
-                  </div>
-                  <div className="flex-shrink-0">
-                    <div className="w-12 h-12 rounded-full bg-yellow-500/20 flex items-center justify-center">
-                      <span className="text-yellow-400 font-bold">
-                        {Math.round(c.score * 100)}%
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            ))}
+        {/* Contenu de la catégorie active */}
+        {activeCategory?.match ? (
+          <SureMatchCard 
+            category={activeCategory} 
+          />
+        ) : (
+          <div className="text-center py-12 bg-slate-800/50 rounded-3xl">
+            <span className="text-6xl mb-4 block">🔍</span>
+            <p className="text-slate-400">Aucun match sûr trouvé pour cette catégorie</p>
           </div>
-        </section>
-
-        {/* Analyse des 3 Logiques */}
-        {prediction && (
-          <section className="mb-8">
-            <h2 className="text-2xl font-bold text-white mb-6 flex items-center gap-3">
-              <span className="text-3xl">🧠</span>
-              Analyse des 3 Logiques Familiales
-            </h2>
-
-            <div className="grid md:grid-cols-3 gap-4">
-              {/* Papa */}
-              {prediction.papa_prediction && (
-                <LogicCard 
-                  name="Papa"
-                  color="green"
-                  icon="👨"
-                  prediction={prediction.papa_prediction}
-                  confidence={prediction.papa_prediction.confidence}
-                />
-              )}
-
-              {/* Grand Frère */}
-              {prediction.grand_frere_prediction && (
-                <LogicCard 
-                  name="Grand Frère"
-                  color="blue"
-                  icon="👦"
-                  prediction={prediction.grand_frere_prediction}
-                  confidence={prediction.grand_frere_prediction.confidence}
-                />
-              )}
-
-              {/* Ma Logique */}
-              {prediction.ma_logique_prediction && (
-                <LogicCard 
-                  name="Ma Logique"
-                  color="purple"
-                  icon="🧠"
-                  prediction={prediction.ma_logique_prediction}
-                  confidence={prediction.ma_logique_prediction.confidence}
-                />
-              )}
-            </div>
-
-            {/* Consensus */}
-            <div className="mt-6 p-6 rounded-2xl bg-slate-800/70 border border-yellow-500/50">
-              <div className="flex items-center gap-4">
-                <span className="text-4xl">
-                  {prediction.all_agree ? '🤝' : prediction.consensus_level === 'FORT' ? '📊' : '⚖️'}
-                </span>
-                <div>
-                  <h3 className="font-bold text-yellow-400 text-lg">
-                    Consensus: {prediction.consensus_level}
-                  </h3>
-                  <p className="text-slate-400">
-                    {prediction.all_agree 
-                      ? 'Les 3 logiques sont unanimes sur le résultat !'
-                      : prediction.consensus_level === 'FORT'
-                        ? '2 logiques sur 3 sont d\'accord'
-                        : 'Les logiques divergent légèrement'
-                    }
-                  </p>
-                </div>
-              </div>
-            </div>
-          </section>
         )}
-
-        {/* Lien vers détail */}
-        <div className="text-center">
-          <Link 
-            to={`/matches/${sureMatch.id}`}
-            className="inline-block px-8 py-4 rounded-2xl bg-yellow-500 text-black font-bold text-lg hover:bg-yellow-400 transition-colors"
-          >
-            Voir l'analyse complète →
-          </Link>
-        </div>
       </div>
     </div>
   );
 }
 
 /**
- * LogicCard - Carte pour afficher une logique
+ * SureMatchCard - Carte complète avec explications
  */
-function LogicCard({ 
-  name, 
-  color, 
-  icon, 
-  prediction,
-  confidence 
-}: { 
-  name: string;
-  color: 'green' | 'blue' | 'purple';
-  icon: string;
-  prediction: LogicPrediction;
-  confidence: number;
-}) {
-  const colorClasses = {
-    green: 'from-green-900/50 border-green-500/50 text-green-400',
-    blue: 'from-blue-900/50 border-blue-500/50 text-blue-400',
-    purple: 'from-purple-900/50 border-purple-500/50 text-purple-400'
-  };
+function SureMatchCard({ category }: { category: SureMatchCategory }) {
+  const { match, prediction, title, icon } = category;
+  
+  if (!match) return null;
+  
+  const pred = match.prediction;
+  const matchDate = new Date(match.match_date).toLocaleDateString('fr-FR', {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+    hour: '2-digit',
+    minute: '2-digit'
+  });
 
   return (
-    <div className={`p-5 rounded-2xl bg-gradient-to-br ${colorClasses[color]} to-slate-900 border`}>
-      <div className="flex items-center gap-3 mb-4">
-        <span className="text-2xl">{icon}</span>
-        <h3 className="font-bold text-lg">{name}</h3>
-        <span className="ml-auto text-sm bg-slate-800 px-3 py-1 rounded-full">
-          {Math.round(confidence * 100)}%
-        </span>
+    <div className="space-y-8">
+      {/* Match Card */}
+      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-yellow-900/30 via-slate-900 to-slate-900 border-2 border-yellow-500/50 p-8">
+        <div className="absolute top-4 right-4">
+          <div className="px-4 py-2 rounded-full bg-yellow-500 text-black font-black text-lg">
+            {Math.round((pred?.confidence || 0) * 100)}% SÛR
+          </div>
+        </div>
+
+        <div className="text-center mb-4">
+          <span className="text-3xl">{icon}</span>
+          <span className="text-xl font-bold text-yellow-400 ml-2">{title}</span>
+        </div>
+
+        <div className="text-center mb-4">
+          <span className="text-sm font-bold px-4 py-2 rounded-full bg-slate-700 text-slate-300">
+            {match.competition_name} • J{match.matchday}
+          </span>
+          <p className="text-slate-500 text-sm mt-2">{matchDate}</p>
+        </div>
+
+        <div className="flex items-center justify-center gap-8 mb-6">
+          <div className="text-center flex-1">
+            <p className="text-2xl md:text-3xl font-black text-white">{match.home_team}</p>
+            <p className="text-slate-500 text-sm">Domicile</p>
+          </div>
+
+          <div className="flex items-center gap-4 px-8 py-4 rounded-2xl bg-yellow-500/20 border-2 border-yellow-500/50">
+            <span className="text-5xl font-black text-yellow-400">{pred?.home_score_forecast}</span>
+            <span className="text-3xl text-yellow-300">-</span>
+            <span className="text-5xl font-black text-yellow-400">{pred?.away_score_forecast}</span>
+          </div>
+
+          <div className="text-center flex-1">
+            <p className="text-2xl md:text-3xl font-black text-white">{match.away_team}</p>
+            <p className="text-slate-500 text-sm">Extérieur</p>
+          </div>
+        </div>
+
+        <div className="text-center">
+          <span className="text-2xl font-bold text-yellow-400">🎯 {pred?.bet_tip}</span>
+        </div>
       </div>
 
-      <div className="text-center mb-4">
-        <span className="text-3xl font-black text-white">
-          {prediction.predicted_home_goals} - {prediction.predicted_away_goals}
-        </span>
+      {/* Explications simples des 3 logiques */}
+      {prediction && (
+        <div className="space-y-6">
+          <h2 className="text-2xl font-bold text-white text-center">
+            📚 Comment on a trouvé ce match sûr ?
+          </h2>
+
+          {/* Ma Logique */}
+          <LogicExplanation
+            name="Ma Logique"
+            icon="🧠"
+            color="purple"
+            shortExplanation={`C'est comme regarder comment les équipes jouent ces derniers temps. Imagine que tu regardes les 10 derniers matchs. Si une équipe gagne beaucoup, elle est "en forme", comme quand tu joues bien à un jeu vidéo parce que tu t'es entraîné !`}
+            data={prediction.ma_logique_prediction}
+            getDetails={(p) => {
+              const ev = p.evidence;
+              return [
+                { label: 'Forme de l\'équipe à domicile', value: `${Math.round((ev?.home_form ?? 0.5) * 100)}%` },
+                { label: 'Forme de l\'équipe extérieur', value: `${Math.round((ev?.away_form ?? 0.5) * 100)}%` },
+                { label: 'Buts moyens marqués domicile', value: `${(ev?.home_avg_goals ?? 1.3).toFixed(1)} par match` },
+                { label: 'Buts moyens marqués extérieur', value: `${(ev?.away_avg_goals ?? 1.2).toFixed(1)} par match` },
+              ];
+            }}
+          />
+
+          {/* Logique de Papa */}
+          <LogicExplanation
+            name="Logique de Papa"
+            icon="👨"
+            color="green"
+            shortExplanation={`Papa regarde le classement et les points. C'est comme à l'école : si tu es 1er de la classe avec plein de bons points, tu es probablement meilleur qu'un élève qui est 15ème. Papa regarde aussi le niveau du championnat - la Premier League c'est comme le concours des meilleurs, la Ligue 1 c'est un cran en dessous.`}
+            data={prediction.papa_prediction}
+            getDetails={(p) => {
+              const ev = p.evidence;
+              return [
+                { label: 'Position au classement domicile', value: `#${ev?.home_position ?? '?'}` },
+                { label: 'Position au classement extérieur', value: `#${ev?.away_position ?? '?'}` },
+                { label: 'Points domicile', value: `${ev?.home_points ?? '?'} pts` },
+                { label: 'Points extérieur', value: `${ev?.away_points ?? '?'} pts` },
+                { label: 'Niveau du championnat', value: ev?.league_level ? `${Math.round((ev.league_level as number) * 100)}%` : '?' },
+              ];
+            }}
+          />
+
+          {/* Logique de Grand Frère */}
+          <LogicExplanation
+            name="Logique de Grand Frère"
+            icon="👦"
+            color="blue"
+            shortExplanation={`Grand frère a une règle d'or : "Jouer à la maison, c'est un super pouvoir !" C'est comme quand tu joues à un jeu chez toi - tu connais le terrain, tes parents t'encouragent. On regarde aussi les matchs précédents entre ces équipes (H2H = Head to Head). Si une équipe gagne toujours contre l'autre, c'est comme un grand frère qui bat toujours son petit frère au foot !`}
+            data={prediction.grand_frere_prediction}
+            getDetails={(p) => {
+              const ev = p.evidence;
+              return [
+                { label: 'Avantage à domicile', value: ev?.home_advantage ? `+${Math.round((ev.home_advantage as number) * 100)}%` : '+12%' },
+                { label: 'Force équipe domicile', value: ev?.home_strength ?? '?' },
+                { label: 'Force équipe extérieur', value: ev?.away_strength ?? '?' },
+                { label: 'Historique H2H', value: ev?.h2h_home_wins !== undefined ? `${ev.h2h_home_wins}V - ${ev.h2h_draws ?? 0}N - ${ev.h2h_away_wins ?? 0}D` : 'Pas assez de données' },
+              ];
+            }}
+          />
+
+          {/* Résumé Consensus */}
+          <div className="p-6 rounded-3xl bg-gradient-to-br from-yellow-900/30 to-slate-900 border-2 border-yellow-500/50">
+            <div className="flex items-center gap-4 mb-4">
+              <span className="text-4xl">{prediction.all_agree ? '🎉' : '🤔'}</span>
+              <div>
+                <h3 className="text-xl font-bold text-yellow-400">
+                  Résultat Final : {prediction.all_agree ? 'TOUS D\'ACCORD !' : 'Consensus ' + prediction.consensus_level}
+                </h3>
+                <p className="text-slate-400">
+                  {prediction.all_agree 
+                    ? 'Les 3 logiques (Moi, Papa et Grand Frère) ont toutes prédit la même chose. C\'est super rare et très fiable !'
+                    : `${prediction.consensus_level === 'FORT' ? '2 logiques sur 3' : 'Les logiques'} sont ${prediction.consensus_level === 'FORT' ? 'd\'accord' : 'partagées'}. On prend la moyenne de leurs avis.`
+                  }
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Lien vers détail */}
+      <div className="text-center">
+        <Link 
+          to={`/matches/${match.id}`}
+          className="inline-block px-8 py-4 rounded-2xl bg-yellow-500 text-black font-bold text-lg hover:bg-yellow-400 transition-colors"
+        >
+          Voir l'analyse complète →
+        </Link>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * LogicExplanation - Explication simple d'une logique
+ */
+function LogicExplanation({ 
+  name, 
+  icon, 
+  color, 
+  shortExplanation,
+  data,
+  getDetails
+}: { 
+  name: string;
+  icon: string;
+  color: 'green' | 'blue' | 'purple';
+  shortExplanation: string;
+  data: LogicPrediction | null | undefined;
+  getDetails: (p: LogicPrediction) => { label: string; value: string }[];
+}) {
+  const colorClasses = {
+    green: 'from-green-900/40 border-green-500/50',
+    blue: 'from-blue-900/40 border-blue-500/50',
+    purple: 'from-purple-900/40 border-purple-500/50'
+  };
+  
+  const textColors = {
+    green: 'text-green-400',
+    blue: 'text-blue-400',
+    purple: 'text-purple-400'
+  };
+
+  if (!data) return null;
+
+  const details = getDetails(data);
+
+  return (
+    <div className={`p-6 rounded-3xl bg-gradient-to-br ${colorClasses[color]} to-slate-900 border-2`}>
+      {/* Header */}
+      <div className="flex items-center gap-4 mb-4">
+        <span className="text-4xl">{icon}</span>
+        <div className="flex-1">
+          <h3 className={`text-xl font-bold ${textColors[color]}`}>{name}</h3>
+          <div className="flex items-center gap-2 mt-1">
+            <span className="text-sm bg-slate-800 px-3 py-1 rounded-full text-white">
+              Confiance: {Math.round(data.confidence * 100)}%
+            </span>
+            <span className={`text-lg font-bold ${textColors[color]}`}>
+              {data.predicted_home_goals} - {data.predicted_away_goals}
+            </span>
+          </div>
+        </div>
       </div>
 
-      <p className="text-sm text-slate-400">
-        {prediction.bet_tip?.split(' - ')[0]}
-      </p>
+      {/* Explication simple */}
+      <div className="mb-4 p-4 rounded-xl bg-slate-800/50">
+        <p className="text-slate-300 text-sm leading-relaxed">
+          <span className="font-bold text-white">💡 Comment ça marche :</span><br/>
+          {shortExplanation}
+        </p>
+      </div>
 
-      {/* Evidence mini */}
-      {prediction.evidence && (
-        <div className="mt-3 pt-3 border-t border-slate-700/50 text-xs text-slate-500">
-          {prediction.evidence.home_position && (
-            <p>Position: #{prediction.evidence.home_position} vs #{prediction.evidence.away_position}</p>
-          )}
-          {prediction.evidence.home_form !== undefined && (
-            <p>Forme: {Math.round(prediction.evidence.home_form * 100)}% vs {Math.round(prediction.evidence.away_form * 100)}%</p>
-          )}
+      {/* Données */}
+      <div className="grid grid-cols-2 gap-3">
+        {details.map((d, i) => (
+          <div key={i} className="flex justify-between items-center p-3 rounded-xl bg-slate-800/30">
+            <span className="text-xs text-slate-500">{d.label}</span>
+            <span className={`font-bold ${textColors[color]}`}>{d.value}</span>
+          </div>
+        ))}
+      </div>
+
+      {/* Analyse */}
+      {data.analysis && (
+        <div className="mt-4 p-3 rounded-xl bg-slate-800/30">
+          <p className="text-xs text-slate-400 italic">{data.analysis}</p>
         </div>
       )}
     </div>

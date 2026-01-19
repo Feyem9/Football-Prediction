@@ -128,6 +128,8 @@ frontend/
 - Login / Register
 - Forgot password
 - OAuth (futur)
+- Profile
+- Logout
 
 ---
 

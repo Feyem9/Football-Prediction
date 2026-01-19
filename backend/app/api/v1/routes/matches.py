@@ -182,12 +182,3 @@ async def generate_predictions(
 ):
     """Génère des prédictions pour les matchs à venir. force=True pour régénérer toutes."""
     return await matches_controller.generate_predictions(db, limit, force)
-
-
-@router.delete("/predictions/clear", tags=["Admin"])
-async def clear_predictions(db: Session = Depends(get_db)):
-    """Supprime toutes les prédictions existantes."""
-    from models.prediction import ExpertPrediction
-    count = db.query(ExpertPrediction).delete()
-    db.commit()
-    return {"message": f"{count} prédictions supprimées"}
