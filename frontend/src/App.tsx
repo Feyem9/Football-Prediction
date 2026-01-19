@@ -12,6 +12,7 @@ import Header from './components/layout/Header';
 import Home from './pages/Home';
 import TodayMatches from './pages/TodayMatches';
 import SureMatch from './pages/SureMatch';
+import History from './pages/History';
 import MatchDetail from './pages/MatchDetail';
 import Standings from './pages/Standings';
 import './index.css';
@@ -26,6 +27,7 @@ function App() {
             <Route path="/" element={<Home />} />
             <Route path="/today" element={<TodayMatches />} />
             <Route path="/sure" element={<SureMatch />} />
+            <Route path="/history" element={<History />} />
             <Route path="/matches" element={<Home />} />
             <Route path="/matches/:id" element={<MatchDetail />} />
             <Route path="/standings" element={<Standings />} />

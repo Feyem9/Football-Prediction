@@ -16,6 +16,7 @@ export default function Header() {
   const navLinks = [
     { path: '/', label: 'Accueil', icon: '🏠' },
     { path: '/sure', label: 'Match Sûr', icon: '🎯' },
+    { path: '/history', label: 'Historique', icon: '📊' },
     { path: '/today', label: 'Aujourd\'hui', icon: '📅' },
     { path: '/matches', label: 'Matchs', icon: '⚽' },
     { path: '/standings/PL', label: 'Classements', icon: '🏆' },
