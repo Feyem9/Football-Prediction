@@ -113,3 +113,77 @@ async def sync_all(
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Erreur de synchronisation: {str(e)}")
+
+
+@router.post("/regenerate-predictions")
+async def regenerate_predictions(
+    competition: Optional[str] = None,
+    limit: int = 50,
+    db: Session = Depends(get_db),
+):
+    """
+    Régénère les prédictions avec les 3 logiques (Papa, Grand Frère, Ma Logique).
+    
+    Supprime les anciennes prédictions et en génère de nouvelles avec
+    les scores individuels de chaque logique.
+    
+    Args:
+        competition: Code de la compétition (optionnel, toutes si non spécifié)
+        limit: Nombre maximum de matchs à traiter
+    
+    Returns:
+        Nombre de prédictions régénérées
+    """
+    from models.match import Match
+    from models.prediction import ExpertPrediction
+    from services.prediction_service import PredictionService
+    from datetime import datetime, timezone
+    
+    try:
+        # Récupérer les matchs à venir
+        query = db.query(Match).filter(
+            Match.match_date > datetime.now(timezone.utc),
+            Match.status.in_(["SCHEDULED", "TIMED"])
+        )
+        
+        if competition:
+            query = query.filter(Match.competition_code == competition)
+        
+        matches = query.order_by(Match.match_date).limit(limit).all()
+        
+        if not matches:
+            return {
+                "success": True,
+                "message": "Aucun match à traiter",
+                "predictions_regenerated": 0
+            }
+        
+        # Supprimer les anciennes prédictions pour ces matchs
+        match_ids = [m.id for m in matches]
+        deleted = db.query(ExpertPrediction).filter(
+            ExpertPrediction.match_id.in_(match_ids)
+        ).delete(synchronize_session=False)
+        db.commit()
+        
+        # Régénérer les prédictions avec les 3 logiques
+        pred_service = PredictionService(db)
+        count = 0
+        errors = []
+        
+        for match in matches:
+            try:
+                await pred_service.generate_prediction(match)
+                count += 1
+            except Exception as e:
+                errors.append(f"{match.home_team} vs {match.away_team}: {str(e)}")
+        
+        return {
+            "success": True,
+            "message": f"Prédictions régénérées avec les 3 logiques",
+            "predictions_deleted": deleted,
+            "predictions_regenerated": count,
+            "total_matches": len(matches),
+            "errors": errors[:5] if errors else None
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Erreur de régénération: {str(e)}")
