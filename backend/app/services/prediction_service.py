@@ -59,11 +59,13 @@ class PredictionService:
         # Tier 4 (40-54%)
         "EL": 0.52,   # Eliteserien (Norvège)
         "SSL": 0.50,  # Allsvenskan (Suède)
+        "HNL": 0.50,  # Croatian First League (Croatie)
         "SL": 0.48,   # Superligaen (Danemark)
         "RSL": 0.45,  # Super League (Suisse)
         "CL": 0.42,   # Czech First League (Tchéquie)
         
         # Tier 5 (25-39%) - Autres ligues
+        "BFL": 0.38,  # Bulgarian First League (Bulgarie)
         "UPL": 0.35,  # Ukrainian Premier League
         "RPL": 0.30,  # Russian Premier League
     }
