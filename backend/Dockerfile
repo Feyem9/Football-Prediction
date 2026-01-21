@@ -2,10 +2,11 @@ FROM python:3.13-slim
 
 WORKDIR /app
 
-# Dépendances système pour psycopg2
+# Dépendances système pour psycopg2 et psql
 RUN apt-get update && apt-get install -y \
     libpq-dev \
     gcc \
+    postgresql-client \
     && rm -rf /var/lib/apt/lists/*
 
 COPY requirements.txt .
