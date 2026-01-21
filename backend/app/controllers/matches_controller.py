@@ -70,29 +70,32 @@ def match_to_response(match: Match, db: Session = None) -> MatchResponse:
     
     if db and match.home_team_id and match.competition_code:
         from models.standing import Standing
-        from datetime import datetime
-        current_season = match.match_date.year if match.match_date else datetime.now().year
         
-        # Classement équipe domicile
-        home_standing = db.query(Standing).filter(
-            Standing.team_id == match.home_team_id,
-            Standing.competition_code == match.competition_code,
-            Standing.season == current_season
-        ).first()
-        if home_standing:
-            home_position = home_standing.position
-            home_points = home_standing.points
+        # Pour matchs internationaux (CL, EL), on ne peut pas récupérer les standings
+        # car ils sont dans les ligues nationales, pas les compétitions internationales
+        international_competitions = ['CL', 'EC', 'WC', 'EL']
         
-        # Classement équipe extérieur  
-        if match.away_team_id:
-            away_standing = db.query(Standing).filter(
-                Standing.team_id == match.away_team_id,
-                Standing.competition_code == match.competition_code,
-                Standing.season == current_season
-            ).first()
-            if away_standing:
-                away_position = away_standing.position
-                away_points = away_standing.points
+        if match.competition_code not in international_competitions:
+            # Classement équipe domicile (prendre le plus récent)
+            home_standing = db.query(Standing).filter(
+                Standing.team_id == match.home_team_id,
+                Standing.competition_code == match.competition_code
+            ).order_by(Standing.last_synced.desc()).first()
+            
+            if home_standing:
+                home_position = home_standing.position
+                home_points = home_standing.points
+            
+            # Classement équipe extérieur  
+            if match.away_team_id:
+                away_standing = db.query(Standing).filter(
+                    Standing.team_id == match.away_team_id,
+                    Standing.competition_code == match.competition_code
+                ).order_by(Standing.last_synced.desc()).first()
+                
+                if away_standing:
+                    away_position = away_standing.position
+                    away_points = away_standing.points
     
     return MatchResponse(
         id=match.id,
