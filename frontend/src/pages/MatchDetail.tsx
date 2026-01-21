@@ -200,44 +200,113 @@ export default function MatchDetail() {
                   </span>
                 </div>
 
-                {/* PREUVES Papa */}
+                {/* PREUVES Papa - EXPLICATIONS COMPLÈTES */}
                 <div className="border-t border-green-500/20 pt-4 mt-4">
-                  <p className="text-xs text-green-400 uppercase tracking-wide mb-3 flex items-center gap-2">
-                    <span>📊</span> PREUVES
+                  <p className="text-xs text-green-400 uppercase tracking-wide mb-3 flex items-center gap-2 font-bold">
+                    <span>📊</span> PREUVES - POURQUOI CE RÉSULTAT ?
                   </p>
-                  <div className="space-y-2 text-xs">
-                    {/* Position et points */}
-                    <div className="flex justify-between items-center">
-                      <span className="text-slate-400">{match.home_team}</span>
-                      <span className="text-white font-bold">
-                        {match.home_standing_position ? `#${match.home_standing_position}` : 'N/A'}
-                        {match.home_standing_points ? ` (${match.home_standing_points} pts)` : ''}
-                      </span>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-slate-400">{match.away_team}</span>
-                      <span className="text-white font-bold">
-                        {match.away_standing_position ? `#${match.away_standing_position}` : 'N/A'}
-                        {match.away_standing_points ? ` (${match.away_standing_points} pts)` : ''}
-                      </span>
+                  
+                  {/* Explication du contexte */}
+                  <div className="bg-green-900/20 border border-green-500/30 rounded-lg p-3 mb-4">
+                    <p className="text-xs text-green-300 font-semibold mb-2">🎯 Ce que Papa regarde :</p>
+                    <p className="text-xs text-slate-300 leading-relaxed">
+                      Papa analyse le <strong>classement actuel</strong> du championnat. Une équipe bien classée 
+                      (top 3) a statistiquement plus de chances de gagner qu'une équipe mal classée (bottom 5). 
+                      Papa compare aussi le <strong>niveau du championnat</strong> : la Ligue 1 (85%) est plus 
+                      relevée que la ligue norvégienne (52%), donc une 5ème place en Ligue 1 peut battre un 
+                      1er de Norvège !
+                    </p>
+                  </div>
+
+                  <div className="space-y-3 text-xs">
+                    {/* Position et points avec explications */}
+                    <div className="bg-slate-800/50 rounded-lg p-3">
+                      <p className="text-green-400 font-bold mb-2">📍 Positions actuelles au classement :</p>
+                      
+                      <div className="flex justify-between items-center mb-2">
+                        <span className="text-slate-300">{match.home_team}</span>
+                        <span className="text-white font-bold bg-slate-700/50 px-3 py-1 rounded">
+                          {match.home_standing_position ? `#${match.home_standing_position}` : 'Position inconnue'}
+                          {match.home_standing_points ? ` • ${match.home_standing_points} pts` : ''}
+                        </span>
+                      </div>
+                      
+                      <div className="flex justify-between items-center">
+                        <span className="text-slate-300">{match.away_team}</span>
+                        <span className="text-white font-bold bg-slate-700/50 px-3 py-1 rounded">
+                          {match.away_standing_position ? `#${match.away_standing_position}` : 'Position inconnue'}
+                          {match.away_standing_points ? ` • ${match.away_standing_points} pts` : ''}
+                        </span>
+                      </div>
+
+                      {/* Explication de la différence */}
+                      {match.home_standing_position && match.away_standing_position && (
+                        <div className="mt-3 pt-3 border-t border-slate-600/50">
+                          <p className="text-xs text-slate-400 italic">
+                            💡 <strong>Écart au classement :</strong> 
+                            {Math.abs(match.home_standing_position - match.away_standing_position)} places de différence.
+                            {Math.abs(match.home_standing_position - match.away_standing_position) > 5 
+                              ? " C'est significatif ! L'équipe mieux classée a un avantage clair." 
+                              : " C'est serré ! Les deux équipes sont au même niveau au classement."}
+                          </p>
+                        </div>
+                      )}
                     </div>
                     
-                    {/* Niveau de ligue */}
-                    <div className="flex justify-between items-center pt-2 border-t border-slate-700/50">
-                      <span className="text-slate-400">Niveau Ligue</span>
-                      <span className="text-green-400 font-bold">{match.competition_name}</span>
+                    {/* Niveau de ligue avec explication */}
+                    <div className="bg-slate-800/50 rounded-lg p-3">
+                      <p className="text-green-400 font-bold mb-2">🏆 Niveau du championnat :</p>
+                      <div className="flex justify-between items-center mb-2">
+                        <span className="text-slate-300">Compétition</span>
+                        <span className="text-green-400 font-bold">{match.competition_name}</span>
+                      </div>
+                      <p className="text-xs text-slate-400 italic mt-2">
+                        💡 <strong>Importance :</strong> Les championnats de top niveau (Premier League, La Liga, 
+                        Ligue 1, Champions League) ont des équipes plus fortes. Papa en tient compte quand il 
+                        compare des équipes de championnats différents. Par exemple, un 10ème de Premier League 
+                        peut battre un 3ème de Championship.
+                      </p>
                     </div>
 
-                    {/* Placeholder for upcoming matches */}
-                    <div className="flex justify-between items-center text-yellow-400/50 italic pt-2">
-                      <span>🔜 Match important à venir</span>
-                      <span>En développement</span>
+                    {/* Matchs importants à venir - EN DÉVELOPPEMENT */}
+                    <div className="bg-yellow-900/20 border border-yellow-500/30 rounded-lg p-3">
+                      <p className="text-yellow-400 font-bold mb-2">🔜 Match important à venir (3 jours) :</p>
+                      <p className="text-xs text-yellow-300 mb-2">
+                        ⏳ <strong>Fonctionnalité en développement</strong>
+                      </p>
+                      <p className="text-xs text-slate-400 italic leading-relaxed">
+                        💡 <strong>Ce que Papa vérifiera bientôt :</strong> Si une équipe a un gros match 
+                        (Champions League, Coupe, derby) dans les 3 prochains jours, elle peut "tourner" 
+                        (faire jouer les remplaçants) pour préserver les titulaires. Cela réduit les 
+                        chances de victoire dans ce match. Exemple : Si le PSG joue contre Lorient samedi 
+                        et a un match de CL mardi, le coach peut faire tourner l'effectif samedi.
+                      </p>
                     </div>
                     
-                    {/* Placeholder for recent important matches */}
-                    <div className="flex justify-between items-center text-yellow-400/50 italic">
-                      <span>⏮️ Match important récent</span>
-                      <span>En développement</span>
+                    {/* Matchs importants récents - EN DÉVELOPPEMENT */}
+                    <div className="bg-orange-900/20 border border-orange-500/30 rounded-lg p-3">
+                      <p className="text-orange-400 font-bold mb-2">⏮️ Match important récent (3 jours) :</p>
+                      <p className="text-xs text-orange-300 mb-2">
+                        ⏳ <strong>Fonctionnalité en développement</strong>
+                      </p>
+                      <p className="text-xs text-slate-400 italic leading-relaxed">
+                        💡 <strong>Ce que Papa vérifiera bientôt :</strong> Si une équipe vient de jouer 
+                        un gros match intense il y a moins de 3 jours, elle peut être <strong>fatiguée</strong> 
+                        physiquement et mentalement. Cela peut réduire ses performances. Exemple : Si Manchester 
+                        City a joué contre le Real Madrid mercredi en CL (match très intense), jouer samedi 
+                        en championnat sera plus difficile (moins de récupération).
+                      </p>
+                    </div>
+
+                    {/* Résumé final */}
+                    <div className="bg-green-900/30 border border-green-500/50 rounded-lg p-3 mt-4">
+                      <p className="text-green-300 font-bold mb-2">✅ EN RÉSUMÉ - Logique Papa :</p>
+                      <ul className="space-y-1 text-xs text-slate-300">
+                        <li>• Équipe mieux classée = Plus de chances de gagner</li>
+                        <li>• Gros écart de points = Avantage significatif</li>
+                        <li>• Championnat relevé = Équipes plus fortes</li>
+                        <li>• (Bientôt) Match important proche = Risque de rotation/fatigue</li>
+                      </ul>
                     </div>
                   </div>
                 </div>

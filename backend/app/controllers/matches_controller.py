@@ -71,9 +71,9 @@ def match_to_response(match: Match, db: Session = None) -> MatchResponse:
     if db and match.home_team_id and match.competition_code:
         from models.standing import Standing
         
-        # Pour matchs internationaux (CL, EL), on ne peut pas récupérer les standings
-        # car ils sont dans les ligues nationales, pas les compétitions internationales
-        international_competitions = ['CL', 'EC', 'WC', 'EL']
+        # Seules les compétitions VRAIMENT internationales sans classement de ligue
+        # CL et EL ont maintenant des classements depuis le nouveau format 2024/2025
+        international_competitions = ['WC', 'EC']  # World Cup, Euro Championship
         
         if match.competition_code not in international_competitions:
             # Classement équipe domicile (prendre le plus récent)
