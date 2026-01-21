@@ -45,6 +45,8 @@ const CONFIG = {
   papa: {
     emoji: '🟢',
     title: 'Papa',
+    subtitle: 'Le Classement',
+    simpleExplanation: '📊 Regarde qui est mieux classé au championnat. Le premier de la classe gagne souvent contre le dernier !',
     color: 'green',
     gradient: 'from-green-600/20 to-emerald-600/20',
     border: 'border-green-500/50',
@@ -53,6 +55,8 @@ const CONFIG = {
   grand_frere: {
     emoji: '🔵',
     title: 'Grand Frère',
+    subtitle: 'Historique & Domicile',
+    simpleExplanation: '🏠 Regarde qui gagne quand ces 2 équipes se rencontrent, et si jouer à la maison donne un avantage.',
     color: 'blue',
     gradient: 'from-blue-600/20 to-cyan-600/20',
     border: 'border-blue-500/50',
@@ -61,6 +65,8 @@ const CONFIG = {
   ma_logique: {
     emoji: '🟣',
     title: 'Ma Logique',
+    subtitle: 'Forme Récente',
+    simpleExplanation: '🔥 Regarde les 10 derniers matchs. Une équipe en forme (qui gagne beaucoup) a plus de chances de continuer à gagner.',
     color: 'purple',
     gradient: 'from-purple-600/20 to-pink-600/20',
     border: 'border-purple-500/50',
@@ -85,14 +91,22 @@ export default function LogicCard({ name, prediction, evidence, homeTeam, awayTe
 
   return (
     <div className={`rounded-2xl bg-gradient-to-br ${config.gradient} border ${config.border} p-5 hover:scale-[1.02] transition-all`}>
-      {/* Header */}
-      <div className="flex items-center justify-between mb-4">
+      {/* Header avec titre et sous-titre */}
+      <div className="flex items-center justify-between mb-2">
         <div className="flex items-center gap-2">
           <span className="text-2xl">{config.emoji}</span>
-          <span className={`font-bold text-lg ${config.text}`}>{config.title}</span>
+          <div>
+            <span className={`font-bold text-lg ${config.text}`}>{config.title}</span>
+            <span className="text-xs text-slate-500 ml-2">({config.subtitle})</span>
+          </div>
         </div>
         <span className="text-sm text-slate-400">{Math.round(prediction.confidence * 100)}%</span>
       </div>
+
+      {/* Explication simple pour grand-père */}
+      <p className="text-xs text-slate-400 mb-4 italic">
+        {config.simpleExplanation}
+      </p>
 
       {/* Score Prédit */}
       <div className="text-center mb-4">
