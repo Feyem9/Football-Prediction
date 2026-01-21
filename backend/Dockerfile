@@ -13,8 +13,11 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . .
 
+# Make start script executable
+RUN chmod +x start.sh
+
 # Render uses PORT env variable
 ENV PORT=8000
 EXPOSE $PORT
 
-CMD alembic upgrade head && cd app && uvicorn main:app --host 0.0.0.0 --port $PORT
+CMD ["./start.sh"]
