@@ -17,4 +17,4 @@ COPY . .
 ENV PORT=8000
 EXPOSE $PORT
 
-CMD cd app && uvicorn main:app --host 0.0.0.0 --port $PORT
+CMD alembic upgrade head && cd app && uvicorn main:app --host 0.0.0.0 --port $PORT
