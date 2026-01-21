@@ -424,24 +424,65 @@ class PredictionService:
             except Exception:
                 pass
 
-        # Combiner classement, forme et H2H
-        home_final = (home_strength * self.WEIGHT_STANDINGS) + \
-                     (home_form * self.WEIGHT_FORM) + \
-                     (home_h2h * self.WEIGHT_H2H)
-                     
-        away_final = (away_strength * self.WEIGHT_STANDINGS) + \
-                     (away_form * self.WEIGHT_FORM) + \
-                     (away_h2h * self.WEIGHT_H2H)
+        # === LOGIQUE DE PAPA (Classement + Niveau Championnat) ===
+        # Basé sur: Position au classement, moyenne de buts, niveau du championnat
+        league_level = self._get_league_strength(match.competition_code)
+        papa_home_strength = home_strength * league_level
+        papa_away_strength = away_strength * league_level
         
-        # Prédire le score
-        home_goals, away_goals = self._predict_score(
-            home_final, away_final, 
+        papa_home_score, papa_away_score = self._predict_score(
+            papa_home_strength, papa_away_strength,
             home_goals_avg, away_goals_avg
         )
+        papa_confidence = min(0.9, 0.5 + abs(home_strength - away_strength) * 0.5)
+        papa_tip = self._generate_bet_tip(papa_home_score, papa_away_score, papa_confidence)
         
-        # Calculer la confiance
-        strength_diff = abs(home_final - away_final)
-        confidence = min(0.85, 0.4 + strength_diff)
+        # === LOGIQUE GRAND FRÈRE (H2H + Loi Domicile) ===
+        # Basé sur: Confrontations directes, avantage domicile
+        home_adv = self._calculate_home_advantage(home_strength, away_strength, home_strength > away_strength)
+        gf_home_strength = home_h2h + home_adv
+        gf_away_strength = away_h2h
+        
+        gf_home_score, gf_away_score = self._predict_score(
+            gf_home_strength, gf_away_strength,
+            home_goals_avg, away_goals_avg
+        )
+        gf_confidence = min(0.8, 0.4 + abs(home_h2h - away_h2h))
+        gf_tip = self._generate_bet_tip(gf_home_score, gf_away_score, gf_confidence)
+        
+        # === MA LOGIQUE (Forme + Double Validation) ===
+        # Basé sur: Forme récente (10 matchs), consensus des 2 autres logiques
+        ml_home_strength = home_form
+        ml_away_strength = away_form
+        
+        ml_home_score, ml_away_score = self._predict_score(
+            ml_home_strength, ml_away_strength,
+            home_goals_avg, away_goals_avg
+        )
+        ml_confidence = min(0.7, 0.3 + abs(home_form - away_form))
+        ml_tip = self._generate_bet_tip(ml_home_score, ml_away_score, ml_confidence)
+        
+        # === CONSENSUS FINAL ===
+        # Moyenne des 3 logiques, pondérée par la confiance
+        total_weight = papa_confidence + gf_confidence + ml_confidence
+        
+        if total_weight > 0:
+            home_goals = round(
+                (papa_home_score * papa_confidence + 
+                 gf_home_score * gf_confidence + 
+                 ml_home_score * ml_confidence) / total_weight
+            )
+            away_goals = round(
+                (papa_away_score * papa_confidence + 
+                 gf_away_score * gf_confidence + 
+                 ml_away_score * ml_confidence) / total_weight
+            )
+        else:
+            home_goals = 1
+            away_goals = 1
+        
+        # Confiance finale = moyenne des confiances
+        confidence = round((papa_confidence + gf_confidence + ml_confidence) / 3, 2)
         
         # Générer conseil et analyse
         bet_tip = self._generate_bet_tip(home_goals, away_goals, confidence)
@@ -452,16 +493,32 @@ class PredictionService:
             h2h_stats
         )
         
-        # Créer la prédiction
+        # Créer la prédiction avec les 3 logiques
         prediction = ExpertPrediction(
             match_id=match.id,
+            # Score final (consensus)
             home_score_forecast=home_goals,
             away_score_forecast=away_goals,
-            confidence=round(confidence, 2),
-            home_goals_avg=round(home_goals_avg, 2),  # Moyenne buts domicile
-            away_goals_avg=round(away_goals_avg, 2),  # Moyenne buts extérieur
+            confidence=confidence,
+            home_goals_avg=round(home_goals_avg, 2),
+            away_goals_avg=round(away_goals_avg, 2),
             analysis=analysis,
-            bet_tip=bet_tip
+            bet_tip=bet_tip,
+            # Logique de Papa
+            papa_home_score=papa_home_score,
+            papa_away_score=papa_away_score,
+            papa_confidence=round(papa_confidence, 2),
+            papa_tip=papa_tip,
+            # Logique Grand Frère
+            grand_frere_home_score=gf_home_score,
+            grand_frere_away_score=gf_away_score,
+            grand_frere_confidence=round(gf_confidence, 2),
+            grand_frere_tip=gf_tip,
+            # Ma Logique
+            ma_logique_home_score=ml_home_score,
+            ma_logique_away_score=ml_away_score,
+            ma_logique_confidence=round(ml_confidence, 2),
+            ma_logique_tip=ml_tip
         )
         
         self.db.add(prediction)

@@ -38,13 +38,30 @@ def match_to_response(match: Match) -> MatchResponse:
     """Convertit un Match en MatchResponse avec prédiction."""
     prediction = None
     if match.expert_prediction:
+        pred = match.expert_prediction
         prediction = PredictionSummary(
-            home_score_forecast=match.expert_prediction.home_score_forecast,
-            away_score_forecast=match.expert_prediction.away_score_forecast,
-            confidence=match.expert_prediction.confidence,
-            bet_tip=match.expert_prediction.bet_tip,
-            home_goals_avg=getattr(match.expert_prediction, 'home_goals_avg', None),
-            away_goals_avg=getattr(match.expert_prediction, 'away_goals_avg', None)
+            # Score final (consensus)
+            home_score_forecast=pred.home_score_forecast,
+            away_score_forecast=pred.away_score_forecast,
+            confidence=pred.confidence,
+            bet_tip=pred.bet_tip,
+            home_goals_avg=getattr(pred, 'home_goals_avg', None),
+            away_goals_avg=getattr(pred, 'away_goals_avg', None),
+            # Logique de Papa
+            papa_home_score=getattr(pred, 'papa_home_score', None),
+            papa_away_score=getattr(pred, 'papa_away_score', None),
+            papa_confidence=getattr(pred, 'papa_confidence', None),
+            papa_tip=getattr(pred, 'papa_tip', None),
+            # Logique Grand Frère
+            grand_frere_home_score=getattr(pred, 'grand_frere_home_score', None),
+            grand_frere_away_score=getattr(pred, 'grand_frere_away_score', None),
+            grand_frere_confidence=getattr(pred, 'grand_frere_confidence', None),
+            grand_frere_tip=getattr(pred, 'grand_frere_tip', None),
+            # Ma Logique
+            ma_logique_home_score=getattr(pred, 'ma_logique_home_score', None),
+            ma_logique_away_score=getattr(pred, 'ma_logique_away_score', None),
+            ma_logique_confidence=getattr(pred, 'ma_logique_confidence', None),
+            ma_logique_tip=getattr(pred, 'ma_logique_tip', None)
         )
     
     return MatchResponse(

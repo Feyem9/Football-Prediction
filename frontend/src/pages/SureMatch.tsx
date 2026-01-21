@@ -40,7 +40,19 @@ export default function SureMatch() {
           { type: 'exact', title: 'Score Exact', icon: '🎯', match: null, prediction: null, explanation: '' },
         ];
         
-        for (const match of data.matches) {
+        // Filtrer uniquement les matchs du jour
+        const today = new Date();
+        const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+        
+        const todayMatches = data.matches.filter((m: Match) => {
+          const matchDate = new Date(m.match_date);
+          const matchDateStr = `${matchDate.getFullYear()}-${String(matchDate.getMonth() + 1).padStart(2, '0')}-${String(matchDate.getDate()).padStart(2, '0')}`;
+          return matchDateStr === todayStr;
+        });
+        
+        console.log(`📅 Matchs du jour (${todayStr}):`, todayMatches.length, 'sur', data.matches.length);
+        
+        for (const match of todayMatches) {
           const conf = match.prediction?.confidence || 0;
           const tip = match.prediction?.bet_tip || '';
           const homeScore = match.prediction?.home_score_forecast ?? 0;

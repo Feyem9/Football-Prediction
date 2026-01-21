@@ -126,12 +126,31 @@ class StandingsResponse(BaseModel):
 
 class PredictionSummary(BaseModel):
     """Résumé d'une prédiction pour affichage dans un match."""
+    # Score final (consensus)
     home_score_forecast: int
     away_score_forecast: int
     confidence: float
     bet_tip: Optional[str] = None
-    home_goals_avg: Optional[float] = None  # Moyenne buts domicile
-    away_goals_avg: Optional[float] = None  # Moyenne buts extérieur
+    home_goals_avg: Optional[float] = None
+    away_goals_avg: Optional[float] = None
+    
+    # Logique de Papa (Classement + Niveau Championnat)
+    papa_home_score: Optional[int] = None
+    papa_away_score: Optional[int] = None
+    papa_confidence: Optional[float] = None
+    papa_tip: Optional[str] = None
+    
+    # Logique Grand Frère (H2H + Domicile)
+    grand_frere_home_score: Optional[int] = None
+    grand_frere_away_score: Optional[int] = None
+    grand_frere_confidence: Optional[float] = None
+    grand_frere_tip: Optional[str] = None
+    
+    # Ma Logique (Forme + Consensus)
+    ma_logique_home_score: Optional[int] = None
+    ma_logique_away_score: Optional[int] = None
+    ma_logique_confidence: Optional[float] = None
+    ma_logique_tip: Optional[str] = None
 
 
 class PredictionResponse(BaseModel):

@@ -253,91 +253,79 @@ function MatchResultCard({ match }: { match: Match }) {
       {/* Expanded Content */}
       {expanded && pred && (
         <div className="p-4 bg-slate-900/30 border-t border-slate-700/50 space-y-4">
-          {/* Breakdown des Prédictions */}
+          {/* Breakdown des 3 Logiques */}
           <div className="grid grid-cols-3 gap-3">
-            {/* 1. Victoire (1X2) */}
+            {/* 1. Logique de Papa */}
             {(() => {
+              const papaHome = pred.papa_home_score ?? pred.home_score_forecast;
+              const papaAway = pred.papa_away_score ?? pred.away_score_forecast;
+              const papaConf = pred.papa_confidence ?? pred.confidence;
+              
               const actualResult = match.score_home! > match.score_away! ? '1' : 
                                    match.score_home! < match.score_away! ? '2' : 'X';
-              const predResult = pred.home_score_forecast > pred.away_score_forecast ? '1' : 
-                                 pred.home_score_forecast < pred.away_score_forecast ? '2' : 'X';
-              const isVictoryCorrect = actualResult === predResult;
-              const resultLabels = { '1': 'Domicile', 'X': 'Nul', '2': 'Extérieur' };
+              const papaResult = papaHome > papaAway ? '1' : papaHome < papaAway ? '2' : 'X';
+              const isPapaCorrect = actualResult === papaResult;
               
               return (
                 <div className={`p-3 rounded-xl text-center ${
-                  isVictoryCorrect ? 'bg-green-900/30 border border-green-500/30' : 'bg-red-900/30 border border-red-500/30'
+                  isPapaCorrect ? 'bg-green-900/30 border border-green-500/30' : 'bg-red-900/30 border border-red-500/30'
                 }`}>
-                  <p className="text-xs text-slate-500 mb-1">� Victoire</p>
+                  <p className="text-xs text-slate-500 mb-1">🟢 Papa</p>
                   <p className="text-lg font-bold">
-                    {isVictoryCorrect ? '✅' : '❌'}
+                    {isPapaCorrect ? '✅' : '❌'}
                   </p>
-                  <p className="text-sm text-slate-400">
-                    Prédit: <span className="font-bold text-white">{resultLabels[predResult as keyof typeof resultLabels]}</span>
-                  </p>
-                  <p className="text-xs text-slate-500">
-                    Réel: {resultLabels[actualResult as keyof typeof resultLabels]}
-                  </p>
+                  <p className="text-sm text-white font-bold">{papaHome}-{papaAway}</p>
+                  <p className="text-xs text-slate-400">{Math.round(papaConf * 100)}%</p>
                 </div>
               );
             })()}
 
-            {/* 2. Score Exact */}
+            {/* 2. Logique Grand Frère */}
             {(() => {
-              const isExactCorrect = pred.home_score_forecast === match.score_home && 
-                                     pred.away_score_forecast === match.score_away;
+              const gfHome = pred.grand_frere_home_score ?? pred.home_score_forecast;
+              const gfAway = pred.grand_frere_away_score ?? pred.away_score_forecast;
+              const gfConf = pred.grand_frere_confidence ?? pred.confidence;
+              
+              const actualResult = match.score_home! > match.score_away! ? '1' : 
+                                   match.score_home! < match.score_away! ? '2' : 'X';
+              const gfResult = gfHome > gfAway ? '1' : gfHome < gfAway ? '2' : 'X';
+              const isGfCorrect = actualResult === gfResult;
               
               return (
                 <div className={`p-3 rounded-xl text-center ${
-                  isExactCorrect ? 'bg-green-900/30 border border-green-500/30' : 'bg-slate-800/50 border border-slate-700'
+                  isGfCorrect ? 'bg-green-900/30 border border-green-500/30' : 'bg-red-900/30 border border-red-500/30'
                 }`}>
-                  <p className="text-xs text-slate-500 mb-1">🎯 Score Exact</p>
+                  <p className="text-xs text-slate-500 mb-1">🔵 Grand Frère</p>
                   <p className="text-lg font-bold">
-                    {isExactCorrect ? '✅' : '❌'}
+                    {isGfCorrect ? '✅' : '❌'}
                   </p>
-                  <p className="text-sm text-slate-400">
-                    Prédit: <span className="font-bold text-white">{pred.home_score_forecast}-{pred.away_score_forecast}</span>
-                  </p>
-                  <p className="text-xs text-slate-500">
-                    Réel: {match.score_home}-{match.score_away}
-                  </p>
+                  <p className="text-sm text-white font-bold">{gfHome}-{gfAway}</p>
+                  <p className="text-xs text-slate-400">{Math.round(gfConf * 100)}%</p>
                 </div>
               );
             })()}
 
-            {/* 3. Nombre de Buts (Over/Under 2.5) */}
+            {/* 3. Ma Logique */}
             {(() => {
-              const totalGoals = match.score_home! + match.score_away!;
-              const tip = pred.bet_tip || '';
-              let goalsCorrect: boolean | null = null;
-              let predType = '';
+              const mlHome = pred.ma_logique_home_score ?? pred.home_score_forecast;
+              const mlAway = pred.ma_logique_away_score ?? pred.away_score_forecast;
+              const mlConf = pred.ma_logique_confidence ?? pred.confidence;
               
-              if (tip.includes('Plus de 2.5')) {
-                goalsCorrect = totalGoals > 2.5;
-                predType = '+2.5';
-              } else if (tip.includes('Moins de 2.5')) {
-                goalsCorrect = totalGoals < 2.5;
-                predType = '-2.5';
-              } else {
-                predType = totalGoals > 2.5 ? '+2.5' : '-2.5';
-              }
+              const actualResult = match.score_home! > match.score_away! ? '1' : 
+                                   match.score_home! < match.score_away! ? '2' : 'X';
+              const mlResult = mlHome > mlAway ? '1' : mlHome < mlAway ? '2' : 'X';
+              const isMlCorrect = actualResult === mlResult;
               
               return (
                 <div className={`p-3 rounded-xl text-center ${
-                  goalsCorrect === true ? 'bg-green-900/30 border border-green-500/30' :
-                  goalsCorrect === false ? 'bg-red-900/30 border border-red-500/30' :
-                  'bg-slate-800/50 border border-slate-700'
+                  isMlCorrect ? 'bg-green-900/30 border border-green-500/30' : 'bg-red-900/30 border border-red-500/30'
                 }`}>
-                  <p className="text-xs text-slate-500 mb-1">⚽ Buts</p>
+                  <p className="text-xs text-slate-500 mb-1">🟡 Ma Logique</p>
                   <p className="text-lg font-bold">
-                    {goalsCorrect === true ? '✅' : goalsCorrect === false ? '❌' : '➖'}
+                    {isMlCorrect ? '✅' : '❌'}
                   </p>
-                  <p className="text-sm text-slate-400">
-                    Prédit: <span className="font-bold text-white">{predType}</span>
-                  </p>
-                  <p className="text-xs text-slate-500">
-                    Réel: {totalGoals} buts
-                  </p>
+                  <p className="text-sm text-white font-bold">{mlHome}-{mlAway}</p>
+                  <p className="text-xs text-slate-400">{Math.round(mlConf * 100)}%</p>
                 </div>
               );
             })()}

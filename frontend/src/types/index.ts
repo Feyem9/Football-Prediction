@@ -22,12 +22,31 @@ export interface Match {
 }
 
 export interface PredictionSummary {
+  // Score final (consensus)
   home_score_forecast: number;
   away_score_forecast: number;
   confidence: number;
   bet_tip: string;
-  home_goals_avg?: number;  // Moyenne buts domicile
-  away_goals_avg?: number;  // Moyenne buts extérieur
+  home_goals_avg?: number;
+  away_goals_avg?: number;
+  
+  // Logique de Papa (Classement + Niveau Championnat)
+  papa_home_score?: number;
+  papa_away_score?: number;
+  papa_confidence?: number;
+  papa_tip?: string;
+  
+  // Logique Grand Frère (H2H + Domicile)
+  grand_frere_home_score?: number;
+  grand_frere_away_score?: number;
+  grand_frere_confidence?: number;
+  grand_frere_tip?: string;
+  
+  // Ma Logique (Forme + Consensus)
+  ma_logique_home_score?: number;
+  ma_logique_away_score?: number;
+  ma_logique_confidence?: number;
+  ma_logique_tip?: string;
 }
 
 export interface LogicEvidence {
