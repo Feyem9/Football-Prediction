@@ -30,14 +30,42 @@ class PredictionService:
     """
     
     # Ranking des championnats (Logique de Papa)
+    # Basé sur les coefficients UEFA et la qualité générale
     LEAGUE_STRENGTH = {
-        "PL": 1.00,   # Premier League - Top niveau
-        "PD": 0.95,   # La Liga
-        "SA": 0.90,   # Serie A
-        "BL1": 0.90,  # Bundesliga
-        "FL1": 0.80,  # Ligue 1
+        # Top Tier (95-100%)
+        "PL": 1.00,   # Premier League (Angleterre)
+        "PD": 0.98,   # La Liga (Espagne)
         "CL": 1.00,   # Champions League
         "WC": 1.00,   # World Cup
+        
+        # Tier 1 (85-94%)
+        "BL1": 0.92,  # Bundesliga (Allemagne)
+        "SA": 0.90,   # Serie A (Italie)
+        "FL1": 0.85,  # Ligue 1 (France)
+        
+        # Tier 2 (70-84%)
+        "PPL": 0.80,  # Primeira Liga (Portugal)
+        "DED": 0.78,  # Eredivisie (Pays-Bas)
+        "BSA": 0.75,  # Jupiler Pro League (Belgique)
+        "EL": 0.90,   # Europa League (moyenne)
+        
+        # Tier 3 (55-69%)
+        "SL": 0.68,   # Super Lig (Turquie)
+        "PL": 0.65,   # Ekstraklasa (Pologne)
+        "ASL": 0.62,  # Austrian Bundesliga (Autriche)
+        "SFL": 0.60,  # Scottish Premiership (Écosse)
+        "GSL": 0.58,  # Super League (Grèce)
+        
+        # Tier 4 (40-54%)
+        "EL": 0.52,   # Eliteserien (Norvège)
+        "SSL": 0.50,  # Allsvenskan (Suède)
+        "SL": 0.48,   # Superligaen (Danemark)
+        "RSL": 0.45,  # Super League (Suisse)
+        "CL": 0.42,   # Czech First League (Tchéquie)
+        
+        # Tier 5 (25-39%) - Autres ligues
+        "UPL": 0.35,  # Ukrainian Premier League
+        "RPL": 0.30,  # Russian Premier League
     }
     
     # Bonus domicile de base (en % de probabilité)
@@ -130,19 +158,26 @@ class PredictionService:
         max_score = 3 * len(results) if results else 1
         return score / max_score
     
+    
     def _get_league_strength(self, competition_code: str) -> float:
         """
-        Retourne la force relative d'un championnat.
+        Retourne la force relative d'un championnat (Logique de Papa).
         
-        Logique de Papa: Comparer le niveau des championnats.
+        Cette logique permet de comparer des équipes de championnats différents.
+        Exemple : PSG (Ligue 1, 85%) vs Bodø/Glimt (Norvège, 52%)
+        
+        Même si Bodø est 1er en Norvège et PSG 5ème en Ligue 1,
+        PSG aura un avantage car la Ligue 1 est un championnat plus relevé.
         
         Args:
             competition_code: Code de la compétition (PL, FL1, etc.)
             
         Returns:
-            Force entre 0 et 1 (1 = top niveau)
+            Force entre 0.3 et 1.0 (1 = top niveau européen)
         """
-        return self.LEAGUE_STRENGTH.get(competition_code, 0.75)
+        # Si championnat inconnu, on estime à un niveau moyen-bas (50%)
+        # Pour éviter de surestimer des championnats mineurs
+        return self.LEAGUE_STRENGTH.get(competition_code, 0.50)
     
     def _calculate_home_advantage(
         self, 
