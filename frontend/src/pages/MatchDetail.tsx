@@ -1,16 +1,14 @@
 /**
- * MatchDetail Page - Détail Match avec Prédictions Complètes et Preuves Réelles
+ * MatchDetail Page - Affiche la prédiction stockée en BD avec les 3 logiques
  */
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import LogicCard from '../components/predictions/LogicCard';
-import { getMatch, getCombinedPrediction } from '../lib/api';
-import type { Match, CombinedPrediction } from '../types';
+import { getMatch } from '../lib/api';
+import type { Match } from '../types';
 
 export default function MatchDetail() {
   const { id } = useParams<{ id: string }>();
   const [match, setMatch] = useState<Match | null>(null);
-  const [prediction, setPrediction] = useState<CombinedPrediction | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -21,12 +19,6 @@ export default function MatchDetail() {
         setLoading(true);
         const matchData = await getMatch(parseInt(id));
         setMatch(matchData);
-        try {
-          const predictionData = await getCombinedPrediction(parseInt(id));
-          setPrediction(predictionData);
-        } catch {
-          setPrediction(null);
-        }
       } catch (err) {
         setError('Match non trouvé');
         console.error(err);
@@ -64,6 +56,7 @@ export default function MatchDetail() {
 
   const isFinished = match.status === 'FINISHED';
   const isLive = match.status === 'IN_PLAY' || match.status === 'PAUSED';
+  const prediction = match.prediction;
 
   const formatDate = (dateStr: string) => {
     return new Date(dateStr).toLocaleDateString('fr-FR', {
@@ -75,11 +68,6 @@ export default function MatchDetail() {
       minute: '2-digit'
     });
   };
-
-  // Extraire les preuves RÉELLES des prédictions API
-  const papaEvidence = prediction?.papa_prediction?.evidence;
-  const grandFrereEvidence = prediction?.grand_frere_prediction?.evidence;
-  const maLogiqueEvidence = prediction?.ma_logique_prediction?.evidence;
 
   return (
     <div className="min-h-screen pb-16">
@@ -147,78 +135,198 @@ export default function MatchDetail() {
       <div className="container mx-auto px-4">
         {prediction ? (
           <>
-            {/* Final Prediction Banner */}
+            {/* Final Prediction Banner - CONSENSUS */}
             <div className="mb-10 p-6 md:p-8 rounded-3xl bg-gradient-to-r from-blue-900/50 via-purple-900/50 to-pink-900/50 border border-blue-500/30">
               <div className="flex flex-col md:flex-row items-center justify-between gap-6">
                 <div className="flex items-center gap-4">
                   <span className="text-4xl">🎯</span>
                   <div>
-                    <h3 className="text-xl font-bold text-white">Prédiction Finale</h3>
-                    <p className="text-slate-400 text-sm">Combinaison des 3 logiques</p>
+                    <h3 className="text-xl font-bold text-white">Prédiction Finale (Consensus)</h3>
+                    <p className="text-slate-400 text-sm">Moyenne pondérée des 3 logiques familiales</p>
                   </div>
                 </div>
                 
                 <div className="flex items-center gap-8">
                   <div className="text-center">
                     <div className="flex items-center gap-3 px-6 py-3 rounded-xl bg-slate-900/50 border border-slate-700">
-                      <span className="text-4xl font-black text-white">{prediction.final_home_goals}</span>
+                      <span className="text-4xl font-black text-white">{prediction.home_score_forecast}</span>
                       <span className="text-2xl text-slate-500">-</span>
-                      <span className="text-4xl font-black text-white">{prediction.final_away_goals}</span>
+                      <span className="text-4xl font-black text-white">{prediction.away_score_forecast}</span>
                     </div>
                   </div>
                   
                   <div className="text-center">
-                    <span className={`inline-block px-5 py-2.5 rounded-xl font-bold text-lg ${
-                      prediction.consensus_level === 'FORT' ? 'bg-green-500/20 text-green-400 border border-green-500/50' :
-                      prediction.consensus_level === 'MOYEN' ? 'bg-yellow-500/20 text-yellow-400 border border-yellow-500/50' :
-                      'bg-red-500/20 text-red-400 border border-red-500/50'
-                    }`}>
-                      {prediction.final_bet_tip.split(' - ')[0]}
+                    <span className="inline-block px-5 py-2.5 rounded-xl font-bold text-lg bg-blue-500/20 text-blue-400 border border-blue-500/50">
+                      {prediction.bet_tip || 'N/A'}
                     </span>
                     <p className="text-xs text-slate-500 mt-2">
-                      Consensus {prediction.consensus_level} • {Math.round(prediction.final_confidence * 100)}%
+                      Confiance: {Math.round((prediction.confidence || 0) * 100)}%
                     </p>
                   </div>
                 </div>
               </div>
             </div>
 
-            {/* Three Logic Cards - avec preuves RÉELLES */}
-            <div className="grid md:grid-cols-3 gap-6">
-              <LogicCard 
-                name="papa" 
-                prediction={prediction.papa_prediction} 
-                evidence={papaEvidence}
-                homeTeam={match.home_team}
-                awayTeam={match.away_team}
-              />
-              <LogicCard 
-                name="grand_frere" 
-                prediction={prediction.grand_frere_prediction}
-                evidence={grandFrereEvidence}
-                homeTeam={match.home_team}
-                awayTeam={match.away_team}
-              />
-              <LogicCard 
-                name="ma_logique" 
-                prediction={prediction.ma_logique_prediction}
-                evidence={maLogiqueEvidence}
-                homeTeam={match.home_team}
-                awayTeam={match.away_team}
-              />
+            {/* Three Logic Cards */}
+            <div className="grid md:grid-cols-3 gap-6 mb-10">
+              {/* Papa Logic */}
+              <div className="rounded-2xl bg-gradient-to-br from-green-600/20 to-emerald-600/20 border border-green-500/50 p-5">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-2">
+                    <span className="text-2xl">🟢</span>
+                    <div>
+                      <span className="font-bold text-lg text-green-400">Papa</span>
+                      <span className="text-xs text-slate-500 ml-2">(Le Classement)</span>
+                    </div>
+                  </div>
+                  <span className="text-sm text-slate-400">{Math.round((prediction.papa_confidence || 0) * 100)}%</span>
+                </div>
+
+                <p className="text-xs text-slate-400 mb-4 italic">
+                  📊 Regarde qui est mieux classé au championnat. Le 1er bat souvent le dernier !
+                </p>
+
+                <div className="text-center mb-4">
+                  <div className="inline-flex items-center gap-3 px-6 py-3 rounded-xl bg-slate-900/50">
+                    <span className="text-3xl font-black text-white">{prediction.papa_home_score || 0}</span>
+                    <span className="text-xl text-slate-500">-</span>
+                    <span className="text-3xl font-black text-white">{prediction.papa_away_score || 0}</span>
+                  </div>
+                </div>
+
+                <div className="text-center mb-4">
+                  <span className="inline-block px-4 py-1.5 rounded-full text-sm font-bold bg-gradient-to-r from-green-600/20 to-emerald-600/20 text-green-400 border border-green-500/50">
+                    {prediction.papa_tip || 'N/A'}
+                  </span>
+                </div>
+
+                {/* PREUVES Papa */}
+                <div className="border-t border-green-500/20 pt-4 mt-4">
+                  <p className="text-xs text-green-400 uppercase tracking-wide mb-3 flex items-center gap-2">
+                    <span>📊</span> PREUVES
+                  </p>
+                  <div className="space-y-2 text-xs">
+                    {/* Position et points */}
+                    <div className="flex justify-between items-center">
+                      <span className="text-slate-400">{match.home_team}</span>
+                      <span className="text-white font-bold">
+                        {match.home_standing_position ? `#${match.home_standing_position}` : 'N/A'}
+                        {match.home_standing_points ? ` (${match.home_standing_points} pts)` : ''}
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-slate-400">{match.away_team}</span>
+                      <span className="text-white font-bold">
+                        {match.away_standing_position ? `#${match.away_standing_position}` : 'N/A'}
+                        {match.away_standing_points ? ` (${match.away_standing_points} pts)` : ''}
+                      </span>
+                    </div>
+                    
+                    {/* Niveau de ligue */}
+                    <div className="flex justify-between items-center pt-2 border-t border-slate-700/50">
+                      <span className="text-slate-400">Niveau Ligue</span>
+                      <span className="text-green-400 font-bold">{match.competition_name}</span>
+                    </div>
+
+                    {/* Placeholder for upcoming matches */}
+                    <div className="flex justify-between items-center text-yellow-400/50 italic pt-2">
+                      <span>🔜 Match important à venir</span>
+                      <span>En développement</span>
+                    </div>
+                    
+                    {/* Placeholder for recent important matches */}
+                    <div className="flex justify-between items-center text-yellow-400/50 italic">
+                      <span>⏮️ Match important récent</span>
+                      <span>En développement</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Grand Frère Logic */}
+              <div className="rounded-2xl bg-gradient-to-br from-blue-600/20 to-cyan-600/20 border border-blue-500/50 p-5">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-2">
+                    <span className="text-2xl">�</span>
+                    <div>
+                      <span className="font-bold text-lg text-blue-400">Grand Frère</span>
+                      <span className="text-xs text-slate-500 ml-2">(Historique & Domicile)</span>
+                    </div>
+                  </div>
+                  <span className="text-sm text-slate-400">{Math.round((prediction.grand_frere_confidence || 0) * 100)}%</span>
+                </div>
+
+                <p className="text-xs text-slate-400 mb-4 italic">
+                  🏠 Regarde qui gagne quand ces 2 équipes se rencontrent, et si jouer à la maison aide !
+                </p>
+
+                <div className="text-center mb-4">
+                  <div className="inline-flex items-center gap-3 px-6 py-3 rounded-xl bg-slate-900/50">
+                    <span className="text-3xl font-black text-white">{prediction.grand_frere_home_score || 0}</span>
+                    <span className="text-xl text-slate-500">-</span>
+                    <span className="text-3xl font-black text-white">{prediction.grand_frere_away_score || 0}</span>
+                  </div>
+                </div>
+
+                <div className="text-center mb-4">
+                  <span className="inline-block px-4 py-1.5 rounded-full text-sm font-bold bg-gradient-to-r from-blue-600/20 to-cyan-600/20 text-blue-400 border border-blue-500/50">
+                    {prediction.grand_frere_tip || 'N/A'}
+                  </span>
+                </div>
+
+                <p className="text-xs text-slate-400 italic">
+                  "{prediction.grand_frere_tip ? `Grand Frère dit : ${prediction.grand_frere_tip}` : 'Pas de conseil Grand Frère'}"
+                </p>
+              </div>
+
+              {/* Ma Logique */}
+              <div className="rounded-2xl bg-gradient-to-br from-purple-600/20 to-pink-600/20 border border-purple-500/50 p-5">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-2">
+                    <span className="text-2xl">🟣</span>
+                    <div>
+                      <span className="font-bold text-lg text-purple-400">Ma Logique</span>
+                      <span className="text-xs text-slate-500 ml-2">(Forme Récente)</span>
+                    </div>
+                  </div>
+                  <span className="text-sm text-slate-400">{Math.round((prediction.ma_logique_confidence || 0) * 100)}%</span>
+                </div>
+
+                <p className="text-xs text-slate-400 mb-4 italic">
+                  � Regarde les 10 derniers matchs. Une équipe en forme a plus de chances de continuer !
+                </p>
+
+                <div className="text-center mb-4">
+                  <div className="inline-flex items-center gap-3 px-6 py-3 rounded-xl bg-slate-900/50">
+                    <span className="text-3xl font-black text-white">{prediction.ma_logique_home_score || 0}</span>
+                    <span className="text-xl text-slate-500">-</span>
+                    <span className="text-3xl font-black text-white">{prediction.ma_logique_away_score || 0}</span>
+                  </div>
+                </div>
+
+                <div className="text-center mb-4">
+                  <span className="inline-block px-4 py-1.5 rounded-full text-sm font-bold bg-gradient-to-r from-purple-600/20 to-pink-600/20 text-purple-400 border border-purple-500/50">
+                    {prediction.ma_logique_tip || 'N/A'}
+                  </span>
+                </div>
+
+                <p className="text-xs text-slate-400 italic">
+                  "{prediction.ma_logique_tip ? `Ma Logique suggère : ${prediction.ma_logique_tip}` : 'Pas de conseil Ma Logique'}"
+                </p>
+              </div>
             </div>
 
-            {/* Consensus Explanation */}
+            {/* Explanation Section */}
             <div className="mt-10 p-6 rounded-2xl bg-slate-800/50 border border-slate-700/50">
-              <h4 className="text-lg font-bold text-white mb-3">📖 Explication du Consensus</h4>
-              <p className="text-slate-400">
-                {prediction.all_agree 
-                  ? "✅ Les 3 logiques sont d'accord sur le résultat. Confiance élevée !"
-                  : prediction.consensus_level === 'MOYEN'
-                    ? "⚠️ Les logiques ne sont pas toutes d'accord. Le consensus est modéré."
-                    : "❌ Désaccord majeur entre les logiques. Prudence conseillée."
-                }
-              </p>
+              <h4 className="text-lg font-bold text-white mb-3">💡 Pourquoi on garde les 3 logiques ?</h4>
+              <div className="space-y-2 text-slate-400 text-sm">
+                <p><strong className="text-green-400">🟢 Papa (Classement):</strong> Fiable pour les grandes ligues. Si une équipe est 1ère, elle a plus de chances de gagner.</p>
+                <p><strong className="text-blue-400">🔵 Grand Frère (Domicile & H2H):</strong> Utile quand 2 équipes se connaissent bien. L'avantage à domicile compte beaucoup !</p>
+                <p><strong className="text-purple-400">🟣 Ma Logique (Forme):</strong> Parfaite pour voir qui est "chaud" en ce moment. La forme du moment &gt; le classement parfois.</p>
+                <p className="pt-2 border-t border-slate-700 mt-3">
+                  🎯 <strong>Le Consensus</strong> combine intelligemment les 3. Si les 3 sont d'accord → forte confiance. Si elles divergent → prudence !
+                </p>
+              </div>
             </div>
           </>
         ) : (

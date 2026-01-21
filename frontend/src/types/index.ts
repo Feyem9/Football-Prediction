@@ -11,9 +11,13 @@ export interface Match {
   home_team: string;
   home_team_short?: string;
   home_team_crest?: string;
+  home_standing_position?: number | null;
+  home_standing_points?: number | null;
   away_team: string;
   away_team_short?: string;
   away_team_crest?: string;
+  away_standing_position?: number | null;
+  away_standing_points?: number | null;
   score_home: number | null;  // API renvoie score_home pas home_score
   score_away: number | null;  // API renvoie score_away pas away_score
   match_date: string;

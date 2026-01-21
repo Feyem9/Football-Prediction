@@ -1,0 +1,1339 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Calendrier 2026 - Football Predictions</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family:
+          -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        padding: 20px;
+        color: #333;
+      }
+
+      .container {
+        max-width: 1400px;
+        margin: 0 auto;
+        background: white;
+        border-radius: 20px;
+        padding: 30px;
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+      }
+
+      h1 {
+        text-align: center;
+        color: #667eea;
+        font-size: 2.5em;
+        margin-bottom: 10px;
+      }
+
+      .subtitle {
+        text-align: center;
+        color: #666;
+        margin-bottom: 30px;
+        font-size: 1.1em;
+      }
+
+      .legend {
+        display: flex;
+        justify-content: center;
+        gap: 20px;
+        margin-bottom: 30px;
+        flex-wrap: wrap;
+      }
+
+      .legend-item {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 15px;
+        background: #f8f9fa;
+        border-radius: 20px;
+      }
+
+      .legend-color {
+        width: 20px;
+        height: 20px;
+        border-radius: 4px;
+      }
+
+      .phase-q1 {
+        background: #4caf50;
+      }
+      .phase-q2 {
+        background: #2196f3;
+      }
+      .phase-q3 {
+        background: #ff9800;
+      }
+      .phase-q4 {
+        background: #9c27b0;
+      }
+      .milestone {
+        background: #f44336;
+      }
+
+      .calendar-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 20px;
+        margin-top: 20px;
+      }
+
+      .month-card {
+        background: white;
+        border: 2px solid #e0e0e0;
+        border-radius: 12px;
+        padding: 15px;
+        transition:
+          transform 0.2s,
+          box-shadow 0.2s;
+      }
+
+      .month-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+      }
+
+      .month-header {
+        font-size: 1.4em;
+        font-weight: bold;
+        margin-bottom: 15px;
+        padding-bottom: 10px;
+        border-bottom: 3px solid;
+      }
+
+      .month-content {
+        font-size: 0.9em;
+        line-height: 1.8;
+      }
+
+      .week {
+        margin-bottom: 15px;
+        padding: 10px;
+        background: #f8f9fa;
+        border-radius: 8px;
+        border-left: 4px solid;
+      }
+
+      .week-title {
+        font-weight: bold;
+        margin-bottom: 5px;
+        color: #333;
+      }
+
+      .week-dates {
+        font-size: 0.85em;
+        color: #666;
+        margin-bottom: 8px;
+      }
+
+      .task-list {
+        list-style: none;
+        padding-left: 0;
+      }
+
+      .task-list li {
+        padding: 4px 0;
+        padding-left: 20px;
+        position: relative;
+      }
+
+      .task-list li:before {
+        content: "✓";
+        position: absolute;
+        left: 0;
+        color: #4caf50;
+        font-weight: bold;
+      }
+
+      .milestone-badge {
+        display: inline-block;
+        background: #f44336;
+        color: white;
+        padding: 4px 12px;
+        border-radius: 12px;
+        font-size: 0.8em;
+        font-weight: bold;
+        margin-top: 8px;
+      }
+
+      .objective {
+        background: #fff3cd;
+        border-left: 4px solid #ffc107;
+        padding: 8px 12px;
+        margin: 10px 0;
+        border-radius: 4px;
+        font-weight: 500;
+      }
+
+      @media print {
+        body {
+          background: white;
+          padding: 0;
+        }
+        .container {
+          box-shadow: none;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>🏆 CALENDRIER 2026 - FOOTBALL PREDICTIONS</h1>
+      <p class="subtitle">De l'idée à la rentabilité en 365 jours</p>
+
+      <div class="legend">
+        <div class="legend-item">
+          <div class="legend-color phase-q1"></div>
+          <span>Q1 - Fondations & MVP</span>
+        </div>
+        <div class="legend-item">
+          <div class="legend-color phase-q2"></div>
+          <span>Q2 - Amélioration & Tests</span>
+        </div>
+        <div class="legend-item">
+          <div class="legend-color phase-q3"></div>
+          <span>Q3 - Lancement & Croissance</span>
+        </div>
+        <div class="legend-item">
+          <div class="legend-color phase-q4"></div>
+          <span>Q4 - Scale & Innovation</span>
+        </div>
+        <div class="legend-item">
+          <div class="legend-color milestone"></div>
+          <span>🎯 Milestone</span>
+        </div>
+      </div>
+
+      <div class="calendar-grid">
+        <!-- JANVIER -->
+        <div class="month-card">
+          <div
+            class="month-header"
+            style="border-color: #4caf50; color: #4caf50"
+          >
+            JANVIER 2026
+          </div>
+          <div class="month-content">
+            <div class="objective">🎯 Infrastructure & Backend Core</div>
+
+            <div class="week" style="border-color: #4caf50">
+              <div class="week-title">Semaine 1 (1-5 jan)</div>
+              <div class="week-dates">Mer 1 - Dim 5</div>
+              <ul class="task-list">
+                <li>Setup environnement (VS Code, Git)</li>
+                <li>Installer Python, Node.js, PostgreSQL</li>
+                <li>Créer structure projet</li>
+                <li>Backend FastAPI minimal</li>
+              </ul>
+            </div>
+
+            <div class="week" style="border-color: #4caf50">
+              <div class="week-title">Semaine 2 (6-12 jan)</div>
+              <div class="week-dates">Lun 6 - Dim 12</div>
+              <ul class="task-list">
+                <li>Base données PostgreSQL</li>
+                <li>Migrations Alembic</li>
+                <li>Auth JWT (register/login)</li>
+                <li>Tests API avec Postman</li>
+              </ul>
+            </div>
+
+            <div class="week" style="border-color: #4caf50">
+              <div class="week-title">Semaine 3 (13-19 jan)</div>
+              <div class="week-dates">Lun 13 - Dim 19</div>
+              <ul class="task-list">
+                <li>Compte Football-Data.org API</li>
+                <li>Service collecte matchs</li>
+                <li>Service collecte classements</li>
+              </ul>
+            </div>
+
+            <div class="week" style="border-color: #4caf50">
+              <div class="week-title">Semaine 4 (20-31 jan)</div>
+              <div class="week-dates">Lun 20 - Sam 31</div>
+              <ul class="task-list">
+                <li>Service stats équipes</li>
+                <li>Job synchro automatique</li>
+                <li>Remplissage base données</li>
+              </ul>
+              <span class="milestone-badge">✓ Backend API opérationnel</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- FÉVRIER -->
+        <div class="month-card">
+          <div
+            class="month-header"
+            style="border-color: #4caf50; color: #4caf50"
+          >
+            FÉVRIER 2026
+          </div>
+          <div class="month-content">
+            <div class="objective">🎯 Frontend & Interface</div>
+
+            <div class="week" style="border-color: #4caf50">
+              <div class="week-title">Semaine 5 (1-9 fév)</div>
+              <div class="week-dates">Dim 1 - Lun 9</div>
+              <ul class="task-list">
+                <li>Setup React + Vite</li>
+                <li>Tailwind CSS intégré</li>
+                <li>Composants de base (Header, Footer)</li>
+                <li>Système de navigation</li>
+              </ul>
+            </div>
+
+            <div class="week" style="border-color: #4caf50">
+              <div class="week-title">Semaine 6 (10-16 fév)</div>
+              <div class="week-dates">Mar 10 - Lun 16</div>
+              <ul class="task-list">
+                <li>Pages Login/Register</li>
+                <li>Intégration auth backend</li>
+                <li>Dashboard principal</li>
+                <li>Layout responsive</li>
+              </ul>
+            </div>
+
+            <div class="week" style="border-color: #4caf50">
+              <div class="week-title">Semaine 7 (17-23 fév)</div>
+              <div class="week-dates">Mar 17 - Lun 23</div>
+              <ul class="task-list">
+                <li>Page liste matchs</li>
+                <li>Page détail match + stats</li>
+                <li>Intégration données API</li>
+              </ul>
+            </div>
+
+            <div class="week" style="border-color: #4caf50">
+              <div class="week-title">Semaine 8 (24-28 fév)</div>
+              <div class="week-dates">Mar 24 - Sam 28</div>
+              <ul class="task-list">
+                <li>Page classements</li>
+                <li>Page profil utilisateur</li>
+                <li>Tests interface complète</li>
+              </ul>
+              <span class="milestone-badge">✓ Frontend fonctionnel</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- MARS -->
+        <div class="month-card">
+          <div
+            class="month-header"
+            style="border-color: #4caf50; color: #4caf50"
+          >
+            MARS 2026
+          </div>
+          <div class="month-content">
+            <div class="objective">🎯 Algorithme Familial V1</div>
+
+            <div class="week" style="border-color: #4caf50">
+              <div class="week-title">Semaine 9 (1-9 mars)</div>
+              <div class="week-dates">Dim 1 - Lun 9</div>
+              <ul class="task-list">
+                <li>Interview père (méthode)</li>
+                <li>Interview frère (méthode)</li>
+                <li>Auto-analyse ta méthode</li>
+              </ul>
+            </div>
+
+            <div class="week" style="border-color: #4caf50">
+              <div class="week-title">Semaine 10 (10-16 mars)</div>
+              <div class="week-dates">Mar 10 - Lun 16</div>
+              <ul class="task-list">
+                <li>Documentation des 3 méthodes</li>
+                <li>Modélisation mathématique</li>
+                <li>Définir les critères/poids</li>
+              </ul>
+            </div>
+
+            <div class="week" style="border-color: #4caf50">
+              <div class="week-title">Semaine 11 (17-23 mars)</div>
+              <div class="week-dates">Mar 17 - Lun 23</div>
+              <ul class="task-list">
+                <li>Coder algorithme père</li>
+                <li>Coder algorithme frère</li>
+                <li>Coder ton algorithme</li>
+              </ul>
+            </div>
+
+            <div class="week" style="border-color: #4caf50">
+              <div class="week-title">Semaine 12 (24-31 mars)</div>
+              <div class="week-dates">Mar 24 - Mar 31</div>
+              <ul class="task-list">
+                <li>Système de consensus</li>
+                <li>Premier pronostic généré !</li>
+                <li>Interface affichage pronostics</li>
+              </ul>
+              <span class="milestone-badge">🎉 MVP COMPLET !</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- AVRIL -->
+        <div class="month-card">
+          <div
+            class="month-header"
+            style="border-color: #2196f3; color: #2196f3"
+          >
+            AVRIL 2026
+          </div>
+          <div class="month-content">
+            <div class="objective">🎯 Backtesting & Optimisation</div>
+
+            <div class="week" style="border-color: #2196f3">
+              <div class="week-title">Semaine 13 (1-6 avr)</div>
+              <div class="week-dates">Mer 1 - Lun 6</div>
+              <ul class="task-list">
+                <li>Collecter données historiques</li>
+                <li>Script backtesting</li>
+                <li>Tests sur 6 mois passés</li>
+              </ul>
+            </div>
+
+            <div class="week" style="border-color: #2196f3">
+              <div class="week-title">Semaine 14 (7-13 avr)</div>
+              <div class="week-dates">Mar 7 - Lun 13</div>
+              <ul class="task-list">
+                <li>Analyser résultats backtest</li>
+                <li>Identifier points faibles</li>
+                <li>Rapport performance</li>
+              </ul>
+            </div>
+
+            <div class="week" style="border-color: #2196f3">
+              <div class="week-title">Semaine 15 (14-20 avr)</div>
+              <div class="week-dates">Mar 14 - Lun 20</div>
+              <ul class="task-list">
+                <li>Ajuster poids critères</li>
+                <li>Optimiser consensus</li>
+                <li>Tests A/B modifications</li>
+              </ul>
+            </div>
+
+            <div class="week" style="border-color: #2196f3">
+              <div class="week-title">Semaine 16 (21-30 avr)</div>
+              <div class="week-dates">Mar 21 - Jeu 30</div>
+              <ul class="task-list">
+                <li>Validation finale taux réussite</li>
+                <li>Documentation performances</li>
+              </ul>
+              <span class="milestone-badge">✓ Algo optimisé 65%+</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- MAI -->
+        <div class="month-card">
+          <div
+            class="month-header"
+            style="border-color: #2196f3; color: #2196f3"
+          >
+            MAI 2026
+          </div>
+          <div class="month-content">
+            <div class="objective">🎯 Features Avancées</div>
+
+            <div class="week" style="border-color: #2196f3">
+              <div class="week-title">Semaine 17 (1-4 mai)</div>
+              <div class="week-dates">Ven 1 - Lun 4</div>
+              <ul class="task-list">
+                <li>Historique détaillé pronostics</li>
+                <li>Stats performance (graphiques)</li>
+              </ul>
+            </div>
+
+            <div class="week" style="border-color: #2196f3">
+              <div class="week-title">Semaine 18 (5-11 mai)</div>
+              <div class="week-dates">Mar 5 - Lun 11</div>
+              <ul class="task-list">
+                <li>Système notifications email</li>
+                <li>Push notifications</li>
+                <li>WebSockets temps réel</li>
+              </ul>
+            </div>
+
+            <div class="week" style="border-color: #2196f3">
+              <div class="week-title">Semaine 19 (12-18 mai)</div>
+              <div class="week-dates">Mar 12 - Lun 18</div>
+              <ul class="task-list">
+                <li>Exploration ML (Jupyter)</li>
+                <li>Entraîner Random Forest</li>
+                <li>Tests modèle ML</li>
+              </ul>
+            </div>
+
+            <div class="week" style="border-color: #2196f3">
+              <div class="week-title">Semaine 20-21 (19-31 mai)</div>
+              <div class="week-dates">Mar 19 - Dim 31</div>
+              <ul class="task-list">
+                <li>Hybridation ML + Algo famille</li>
+                <li>Comparaison performances</li>
+              </ul>
+              <span class="milestone-badge">✓ Système hybride IA</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- JUIN -->
+        <div class="month-card">
+          <div
+            class="month-header"
+            style="border-color: #2196f3; color: #2196f3"
+          >
+            JUIN 2026
+          </div>
+          <div class="month-content">
+            <div class="objective">🎯 Tests & Polissage</div>
+
+            <div class="week" style="border-color: #2196f3">
+              <div class="week-title">Semaine 22 (1-8 juin)</div>
+              <div class="week-dates">Lun 1 - Lun 8</div>
+              <ul class="task-list">
+                <li>Recruter 20 beta testeurs</li>
+                <li>Lancement beta privée</li>
+                <li>Collecter feedback</li>
+              </ul>
+            </div>
+
+            <div class="week" style="border-color: #2196f3">
+              <div class="week-title">Semaine 23 (9-15 juin)</div>
+              <div class="week-dates">Mar 9 - Lun 15</div>
+              <ul class="task-list">
+                <li>Corrections bugs prioritaires</li>
+                <li>Améliorations UX feedback</li>
+                <li>Tests intensifs</li>
+              </ul>
+            </div>
+
+            <div class="week" style="border-color: #2196f3">
+              <div class="week-title">Semaine 24 (16-22 juin)</div>
+              <div class="week-dates">Mar 16 - Lun 22</div>
+              <ul class="task-list">
+                <li>Optimisation performances</li>
+                <li>Cache + requêtes SQL</li>
+                <li>SEO et accessibilité</li>
+              </ul>
+            </div>
+
+            <div class="week" style="border-color: #2196f3">
+              <div class="week-title">Semaine 25 (23-30 juin)</div>
+              <div class="week-dates">Mar 23 - Mar 30</div>
+              <ul class="task-list">
+                <li>Documentation utilisateur</li>
+                <li>Préparation lancement public</li>
+              </ul>
+              <span class="milestone-badge">🎉 Beta validée !</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- JUILLET -->
+        <div class="month-card">
+          <div
+            class="month-header"
+            style="border-color: #ff9800; color: #ff9800"
+          >
+            JUILLET 2026
+          </div>
+          <div class="month-content">
+            <div class="objective">🎯 Lancement Public</div>
+
+            <div class="week" style="border-color: #ff9800">
+              <div class="week-title">Semaine 26 (1-6 juil)</div>
+              <div class="week-dates">Mer 1 - Lun 6</div>
+              <ul class="task-list">
+                <li>Déploiement AWS prod</li>
+                <li>Config EC2, RDS, CloudFront</li>
+                <li>SSL/HTTPS</li>
+              </ul>
+            </div>
+
+            <div class="week" style="border-color: #ff9800">
+              <div class="week-title">Semaine 27 (7-13 juil)</div>
+              <div class="week-dates">Mar 7 - Lun 13</div>
+              <ul class="task-list">
+                <li>Monitoring (CloudWatch, Sentry)</li>
+                <li>CI/CD GitHub Actions</li>
+                <li>Tests de charge</li>
+              </ul>
+            </div>
+
+            <div class="week" style="border-color: #ff9800">
+              <div class="week-title">Semaine 28 (14-20 juil)</div>
+              <div class="week-dates">Mar 14 - Lun 20</div>
+              <ul class="task-list">
+                <li>Landing page SEO</li>
+                <li>Réseaux sociaux (setup)</li>
+                <li>Contenu marketing</li>
+                <li>🚀 LANCEMENT 15 JUILLET !</li>
+              </ul>
+              <span class="milestone-badge">🚀 LANCEMENT PUBLIC</span>
+            </div>
+
+            <div class="week" style="border-color: #ff9800">
+              <div class="week-title">Semaine 29 (21-31 juil)</div>
+              <div class="week-dates">Mar 21 - Ven 31</div>
+              <ul class="task-list">
+                <li>Monitoring intensif</li>
+                <li>Support utilisateurs</li>
+                <li>Corrections rapides</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        <!-- AOÛT -->
+        <div class="month-card">
+          <div
+            class="month-header"
+            style="border-color: #ff9800; color: #ff9800"
+          >
+            AOÛT 2026
+          </div>
+          <div class="month-content">
+            <div class="objective">🎯 Acquisition Utilisateurs</div>
+
+            <div class="week" style="border-color: #ff9800">
+              <div class="week-title">Semaine 30 (1-3 août)</div>
+              <div class="week-dates">Sam 1 - Lun 3</div>
+              <ul class="task-list">
+                <li>Publication pronostics gratuits</li>
+                <li>Engagement réseaux sociaux</li>
+              </ul>
+            </div>
+
+            <div class="week" style="border-color: #ff9800">
+              <div class="week-title">Semaine 31 (4-10 août)</div>
+              <div class="week-dates">Mar 4 - Lun 10</div>
+              <ul class="task-list">
+                <li>Partenariats influenceurs</li>
+                <li>Guest posts blogs sportifs</li>
+                <li>Community management</li>
+              </ul>
+            </div>
+
+            <div class="week" style="border-color: #ff9800">
+              <div class="week-title">Semaine 32 (11-17 août)</div>
+              <div class="week-dates">Mar 11 - Lun 17</div>
+              <ul class="task-list">
+                <li>Analyse comportement users</li>
+                <li>Google Analytics</li>
+                <li>Identifier frictions</li>
+              </ul>
+            </div>
+
+            <div class="week" style="border-color: #ff9800">
+              <div class="week-title">Semaine 33-35 (18-31 août)</div>
+              <div class="week-dates">Mar 18 - Lun 31</div>
+              <ul class="task-list">
+                <li>Améliorations basées données</li>
+                <li>A/B testing</li>
+              </ul>
+              <span class="milestone-badge">🎯 1000 utilisateurs</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- SEPTEMBRE -->
+        <div class="month-card">
+          <div
+            class="month-header"
+            style="border-color: #ff9800; color: #ff9800"
+          >
+            SEPTEMBRE 2026
+          </div>
+          <div class="month-content">
+            <div class="objective">🎯 Monétisation</div>
+
+            <div class="week" style="border-color: #ff9800">
+              <div class="week-title">Semaine 36 (1-7 sept)</div>
+              <div class="week-dates">Mar 1 - Lun 7</div>
+              <ul class="task-list">
+                <li>Intégration Stripe/PayPal</li>
+                <li>Créer plans abonnement</li>
+                <li>Gestion accès par niveau</li>
+              </ul>
+            </div>
+
+            <div class="week" style="border-color: #ff9800">
+              <div class="week-title">Semaine 37 (8-14 sept)</div>
+              <div class="week-dates">Mar 8 - Lun 14</div>
+              <ul class="task-list">
+                <li>Page pricing attractive</li>
+                <li>Tests paiement complets</li>
+                <li>Préparer campagne email</li>
+              </ul>
+            </div>
+
+            <div class="week" style="border-color: #ff9800">
+              <div class="week-title">Semaine 38 (15-21 sept)</div>
+              <div class="week-dates">Mar 15 - Lun 21</div>
+              <ul class="task-list">
+                <li>🚀 Lancement abonnements !</li>
+                <li>Campagne email users gratuits</li>
+                <li>Promo -50% 1er mois</li>
+              </ul>
+              <span class="milestone-badge">💰 Premiers revenus !</span>
+            </div>
+
+            <div class="week" style="border-color: #ff9800">
+              <div class="week-title">Semaine 39-40 (22-30 sept)</div>
+              <div class="week-dates">Mar 22 - Mer 30</div>
+              <ul class="task-list">
+                <li>Support abonnés payants</li>
+                <li>Optimisation conversion</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        <!-- OCTOBRE -->
+        <div class="month-card">
+          <div
+            class="month-header"
+            style="border-color: #9c27b0; color: #9c27b0"
+          >
+            OCTOBRE 2026
+          </div>
+          <div class="month-content">
+            <div class="objective">🎯 Expansion Fonctionnelle</div>
+
+            <div class="week" style="border-color: #9c27b0">
+              <div class="week-title">Semaine 41 (1-5 oct)</div>
+              <div class="week-dates">Jeu 1 - Lun 5</div>
+              <ul class="task-list">
+                <li>API publique développeurs</li>
+                <li>Documentation API</li>
+                <li>Webhooks intégrations</li>
+              </ul>
+            </div>
+
+            <div class="week" style="border-color: #9c27b0">
+              <div class="week-title">Semaine 42 (6-12 oct)</div>
+              <div class="week-dates">Mar 6 - Lun 12</div>
+              <ul class="task-list">
+                <li>App mobile PWA améliorée</li>
+                <li>Widget embeddable sites</li>
+                <li>Tests intégrations</li>
+              </ul>
+            </div>
+
+            <div class="week" style="border-color: #9c27b0">
+              <div class="week-title">Semaine 43 (13-19 oct)</div>
+              <div class="week-dates">Mar 13 - Lun 19</div>
+              <ul class="task-list">
+                <li>Pronostics scores exacts</li>
+                <li>Pronostics Mi-temps/Fin</li>
+              </ul>
+            </div>
+
+            <div class="week" style="border-color: #9c27b0">
+              <div class="week-title">Semaine 44 (20-31 oct)</div>
+              <div class="week-dates">Mar 20 - Sam 31</div>
+              <ul class="task-list">
+                <li>Pronostics Over/Under buts</li>
+                <li>Pronostics Corners, Cartons</li>
+              </ul>
+              <span class="milestone-badge">✓ Offre élargie</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- NOVEMBRE -->
+        <div class="month-card">
+          <div
+            class="month-header"
+            style="border-color: #9c27b0; color: #9c27b0"
+          >
+            NOVEMBRE 2026
+          </div>
+          <div class="month-content">
+            <div class="objective">🎯 Automatisation & Scaling</div>
+
+            <div class="week" style="border-color: #9c27b0">
+              <div class="week-title">Semaine 45 (1-2 nov)</div>
+              <div class="week-dates">Dim 1 - Lun 2</div>
+              <ul class="task-list">
+                <li>Auto-publication pronostics</li>
+                <li>Auto-reporting performances</li>
+              </ul>
+            </div>
+
+            <div class="week" style="border-color: #9c27b0">
+              <div class="week-title">Semaine 46 (3-9 nov)</div>
+              <div class="week-dates">Mar 3 - Lun 9</div>
+              <ul class="task-list">
+                <li>Auto-marketing (emails)</li>
+                <li>Auto-posts réseaux sociaux</li>
+                <li>Dashboard admin complet</li>
+              </ul>
+            </div>
+
+            <div class="week" style="border-color: #9c27b0">
+              <div class="week-title">Semaine 47 (10-16 nov)</div>
+              <div class="week-dates">Mar 10 - Lun 16</div>
+              <ul class="task-list">
+                <li>Programme partenariat experts</li>
+                <li>Système rémunération mérite</li>
+              </ul>
+            </div>
+
+            <div class="week" style="border-color: #9c27b0">
+              <div class="week-title">Semaine 48-49 (17-30 nov)</div>
+              <div class="week-dates">Mar 17 - Lun 30</div>
+              <ul class="task-list">
+                <li>Recruter 5-10 nouveaux experts</li>
+                <li>Agrégation multi-experts</li>
+              </ul>
+              <span class="milestone-badge">✓ Plateforme autonome</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- DÉCEMBRE -->
+        <div class="month-card">
+          <div
+            class="month-header"
+            style="border-color: #9c27b0; color: #9c27b0"
+          >
+            DÉCEMBRE 2026
+          </div>
+          <div class="month-content">
+            <div class="objective">🎯 Bilan & Stratégie 2027</div>
+
+            <div class="week" style="border-color: #9c27b0">
+              <div class="week-title">Semaine 50 (1-7 déc)</div>
+              <div class="week-dates">Mar 1 - Lun 7</div>
+              <ul class="task-list">
+                <li>Audit performances complet</li>
+                <li>Optimisations infrastructure</li>
+                <li>Réduction coûts AWS</li>
+              </ul>
+            </div>
+
+            <div class="week" style="border-color: #9c27b0">
+              <div class="week-title">Semaine 51 (8-14 déc)</div>
+              <div class="week-dates">Mar 8 - Lun 14</div>
+              <ul class="task-list">
+                <li>Améliorations finales UX</li>
+                <li>Préparer features 2027</li>
+                <li>Roadmap Q1 2027</li>
+              </ul>
+            </div>
+
+            <div class="week" style="border-color: #9c27b0">
+              <div class="week-title">Semaine 52 (15-21 déc)</div>
+              <div class="week-dates">Mar 15 - Lun 21</div>
+              <ul class="task-list">
+                <li>Rapport performances algorithme</li>
+                <li>Bilan financier annuel</li>
+                <li>Analyse croissance users</li>
+              </ul>
+            </div>
+
+            <div class="week" style="border-color: #9c27b0">
+              <div class="week-title">Semaine 53 (22-31 déc)</div>
+              <div class="week-dates">Mar 22 - Jeu 31</div>
+              <ul class="task-list">
+                <li>Stratégie complète 2027</li>
+                <li>Documentation année 2026</li>
+                <li>🎉 Célébration réussite !</li>
+              </ul>
+              <span class="milestone-badge">🏆 ANNÉE ACCOMPLIE !</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- OBJECTIFS ANNUELS -->
+      <div
+        style="
+          margin-top: 40px;
+          padding: 30px;
+          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+          border-radius: 15px;
+          color: white;
+        "
+      >
+        <h2 style="text-align: center; font-size: 2em; margin-bottom: 20px">
+          🎯 OBJECTIFS FIN 2026
+        </h2>
+        <div
+          style="
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+          "
+        >
+          <div
+            style="
+              background: rgba(255, 255, 255, 0.1);
+              padding: 20px;
+              border-radius: 10px;
+              text-align: center;
+            "
+          >
+            <div style="font-size: 2.5em; font-weight: bold">10 000+</div>
+            <div>Utilisateurs inscrits</div>
+          </div>
+          <div
+            style="
+              background: rgba(255, 255, 255, 0.1);
+              padding: 20px;
+              border-radius: 10px;
+              text-align: center;
+            "
+          >
+            <div style="font-size: 2.5em; font-weight: bold">500+</div>
+            <div>Abonnés payants</div>
+          </div>
+          <div
+            style="
+              background: rgba(255, 255, 255, 0.1);
+              padding: 20px;
+              border-radius: 10px;
+              text-align: center;
+            "
+          >
+            <div style="font-size: 2.5em; font-weight: bold">7 500€</div>
+            <div>Revenus mensuels</div>
+          </div>
+          <div
+            style="
+              background: rgba(255, 255, 255, 0.1);
+              padding: 20px;
+              border-radius: 10px;
+              text-align: center;
+            "
+          >
+            <div style="font-size: 2.5em; font-weight: bold">65-75%</div>
+            <div>Taux de réussite</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- MILESTONES CLÉS -->
+      <div
+        style="
+          margin-top: 40px;
+          padding: 30px;
+          background: #f8f9fa;
+          border-radius: 15px;
+        "
+      >
+        <h2
+          style="
+            text-align: center;
+            font-size: 2em;
+            margin-bottom: 30px;
+            color: #333;
+          "
+        >
+          🏆 MILESTONES CLÉS 2026
+        </h2>
+        <div
+          style="
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 25px;
+          "
+        >
+          <div
+            style="
+              border-left: 5px solid #4caf50;
+              padding: 20px;
+              background: white;
+              border-radius: 8px;
+            "
+          >
+            <div
+              style="
+                font-weight: bold;
+                font-size: 1.2em;
+                color: #4caf50;
+                margin-bottom: 10px;
+              "
+            >
+              31 MARS
+            </div>
+            <div style="font-size: 1.5em; margin-bottom: 5px">
+              🎉 MVP COMPLET
+            </div>
+            <div style="color: #666">
+              Application fonctionnelle de bout en bout avec algorithme familial
+            </div>
+          </div>
+          <div
+            style="
+              border-left: 5px solid #2196f3;
+              padding: 20px;
+              background: white;
+              border-radius: 8px;
+            "
+          >
+            <div
+              style="
+                font-weight: bold;
+                font-size: 1.2em;
+                color: #2196f3;
+                margin-bottom: 10px;
+              "
+            >
+              30 JUIN
+            </div>
+            <div style="font-size: 1.5em; margin-bottom: 5px">
+              ✅ BETA VALIDÉE
+            </div>
+            <div style="color: #666">
+              Tests utilisateurs réussis, bugs corrigés, prêt pour lancement
+            </div>
+          </div>
+          <div
+            style="
+              border-left: 5px solid #ff9800;
+              padding: 20px;
+              background: white;
+              border-radius: 8px;
+            "
+          >
+            <div
+              style="
+                font-weight: bold;
+                font-size: 1.2em;
+                color: #ff9800;
+                margin-bottom: 10px;
+              "
+            >
+              15 JUILLET
+            </div>
+            <div style="font-size: 1.5em; margin-bottom: 5px">
+              🚀 LANCEMENT PUBLIC
+            </div>
+            <div style="color: #666">
+              Plateforme accessible au grand public, premiers utilisateurs
+            </div>
+          </div>
+          <div
+            style="
+              border-left: 5px solid #f44336;
+              padding: 20px;
+              background: white;
+              border-radius: 8px;
+            "
+          >
+            <div
+              style="
+                font-weight: bold;
+                font-size: 1.2em;
+                color: #f44336;
+                margin-bottom: 10px;
+              "
+            >
+              15 SEPTEMBRE
+            </div>
+            <div style="font-size: 1.5em; margin-bottom: 5px">
+              💰 PREMIERS REVENUS
+            </div>
+            <div style="color: #666">
+              Système d'abonnement actif, premiers paiements reçus
+            </div>
+          </div>
+          <div
+            style="
+              border-left: 5px solid #9c27b0;
+              padding: 20px;
+              background: white;
+              border-radius: 8px;
+            "
+          >
+            <div
+              style="
+                font-weight: bold;
+                font-size: 1.2em;
+                color: #9c27b0;
+                margin-bottom: 10px;
+              "
+            >
+              30 NOVEMBRE
+            </div>
+            <div style="font-size: 1.5em; margin-bottom: 5px">
+              ⚙️ AUTOMATISATION
+            </div>
+            <div style="color: #666">
+              Plateforme quasi-autonome, scaling en place
+            </div>
+          </div>
+          <div
+            style="
+              border-left: 5px solid #ff5722;
+              padding: 20px;
+              background: white;
+              border-radius: 8px;
+            "
+          >
+            <div
+              style="
+                font-weight: bold;
+                font-size: 1.2em;
+                color: #ff5722;
+                margin-bottom: 10px;
+              "
+            >
+              31 DÉCEMBRE
+            </div>
+            <div style="font-size: 1.5em; margin-bottom: 5px">
+              🏆 RENTABILITÉ
+            </div>
+            <div style="color: #666">
+              Objectifs atteints, plateforme rentable, stratégie 2027
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- BUDGET -->
+      <div
+        style="
+          margin-top: 40px;
+          padding: 30px;
+          background: #fff3cd;
+          border-radius: 15px;
+          border: 2px solid #ffc107;
+        "
+      >
+        <h2
+          style="
+            text-align: center;
+            font-size: 2em;
+            margin-bottom: 20px;
+            color: #856404;
+          "
+        >
+          💰 BUDGET ANNUEL 2026
+        </h2>
+        <div
+          style="
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            max-width: 800px;
+            margin: 0 auto;
+          "
+        >
+          <div>
+            <h3 style="color: #dc3545; margin-bottom: 15px">
+              📉 COÛTS (estimés)
+            </h3>
+            <ul style="list-style: none; padding: 0">
+              <li style="padding: 8px 0; border-bottom: 1px solid #ddd">
+                Hébergement AWS : 1 200-2 400€/an
+              </li>
+              <li style="padding: 8px 0; border-bottom: 1px solid #ddd">
+                APIs Football : 600-1 200€/an
+              </li>
+              <li style="padding: 8px 0; border-bottom: 1px solid #ddd">
+                Outils SaaS : 600€/an
+              </li>
+              <li style="padding: 8px 0; border-bottom: 1px solid #ddd">
+                Marketing : 2 400-6 000€/an
+              </li>
+              <li
+                style="
+                  padding: 8px 0;
+                  font-weight: bold;
+                  font-size: 1.2em;
+                  color: #dc3545;
+                "
+              >
+                TOTAL : 5 000-10 000€
+              </li>
+            </ul>
+          </div>
+          <div>
+            <h3 style="color: #28a745; margin-bottom: 15px">
+              📈 REVENUS (projetés)
+            </h3>
+            <ul style="list-style: none; padding: 0">
+              <li style="padding: 8px 0; border-bottom: 1px solid #ddd">
+                Septembre : 750€
+              </li>
+              <li style="padding: 8px 0; border-bottom: 1px solid #ddd">
+                Octobre : 2 250€
+              </li>
+              <li style="padding: 8px 0; border-bottom: 1px solid #ddd">
+                Novembre : 4 500€
+              </li>
+              <li style="padding: 8px 0; border-bottom: 1px solid #ddd">
+                Décembre : 7 500€
+              </li>
+              <li
+                style="
+                  padding: 8px 0;
+                  font-weight: bold;
+                  font-size: 1.2em;
+                  color: #28a745;
+                "
+              >
+                TOTAL 2026 : ~15 000€
+              </li>
+            </ul>
+          </div>
+        </div>
+        <div
+          style="
+            text-align: center;
+            margin-top: 20px;
+            padding: 15px;
+            background: #d4edda;
+            border-radius: 8px;
+            border: 2px solid #28a745;
+          "
+        >
+          <div style="font-size: 1.5em; font-weight: bold; color: #155724">
+            ✅ ROI POSITIF DÈS SEPTEMBRE 2026
+          </div>
+          <div style="color: #155724; margin-top: 5px">
+            Rentabilité atteinte en 9 mois
+          </div>
+        </div>
+      </div>
+
+      <!-- CONSEILS -->
+      <div
+        style="
+          margin-top: 40px;
+          padding: 30px;
+          background: #e7f3ff;
+          border-radius: 15px;
+          border-left: 5px solid #2196f3;
+        "
+      >
+        <h2 style="font-size: 1.8em; margin-bottom: 20px; color: #0d47a1">
+          💡 CONSEILS POUR RÉUSSIR
+        </h2>
+        <div
+          style="
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+          "
+        >
+          <div style="padding: 15px; background: white; border-radius: 8px">
+            <div style="font-size: 1.5em; margin-bottom: 10px">⏰</div>
+            <div style="font-weight: bold; margin-bottom: 5px">
+              Routine quotidienne
+            </div>
+            <div style="color: #666; font-size: 0.9em">
+              6-8h de dev par jour, 5 jours/semaine. Prendre 1 semaine de pause
+              tous les 3 mois.
+            </div>
+          </div>
+          <div style="padding: 15px; background: white; border-radius: 8px">
+            <div style="font-size: 1.5em; margin-bottom: 10px">📝</div>
+            <div style="font-weight: bold; margin-bottom: 5px">
+              Documentation continue
+            </div>
+            <div style="color: #666; font-size: 0.9em">
+              Documenter chaque décision importante. Tenir un journal de bord
+              hebdomadaire.
+            </div>
+          </div>
+          <div style="padding: 15px; background: white; border-radius: 8px">
+            <div style="font-size: 1.5em; margin-bottom: 10px">🧪</div>
+            <div style="font-weight: bold; margin-bottom: 5px">
+              Tests réguliers
+            </div>
+            <div style="color: #666; font-size: 0.9em">
+              Tester chaque feature immédiatement. Ne pas accumuler la dette
+              technique.
+            </div>
+          </div>
+          <div style="padding: 15px; background: white; border-radius: 8px">
+            <div style="font-size: 1.5em; margin-bottom: 10px">👥</div>
+            <div style="font-weight: bold; margin-bottom: 5px">
+              Feedback utilisateurs
+            </div>
+            <div style="color: #666; font-size: 0.9em">
+              Écouter activement les utilisateurs. Itérer rapidement sur leurs
+              retours.
+            </div>
+          </div>
+          <div style="padding: 15px; background: white; border-radius: 8px">
+            <div style="font-size: 1.5em; margin-bottom: 10px">📊</div>
+            <div style="font-weight: bold; margin-bottom: 5px">
+              Métriques prioritaires
+            </div>
+            <div style="color: #666; font-size: 0.9em">
+              Suivre: taux de réussite algo, nb users actifs, MRR, taux
+              conversion.
+            </div>
+          </div>
+          <div style="padding: 15px; background: white; border-radius: 8px">
+            <div style="font-size: 1.5em; margin-bottom: 10px">🎯</div>
+            <div style="font-weight: bold; margin-bottom: 5px">
+              Focus & simplicité
+            </div>
+            <div style="color: #666; font-size: 0.9em">
+              Ne pas sur-complexifier. MVP d'abord, optimisations ensuite.
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- FOOTER -->
+      <div
+        style="
+          margin-top: 50px;
+          text-align: center;
+          padding: 30px;
+          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+          border-radius: 15px;
+          color: white;
+        "
+      >
+        <div style="font-size: 3em; margin-bottom: 10px">🚀</div>
+        <h2 style="font-size: 2em; margin-bottom: 10px">PRÊT POUR 2026 ?</h2>
+        <p style="font-size: 1.2em; margin-bottom: 20px">
+          De zéro à une plateforme rentable en 365 jours
+        </p>
+        <div style="font-size: 1.5em; font-weight: bold">
+          1er JANVIER 2026 - 9H00
+        </div>
+        <div style="font-size: 1.2em; margin-top: 10px">
+          mkdir football-predictions && cd football-predictions
+        </div>
+        <div style="margin-top: 20px; font-size: 2em">💪⚽💻</div>
+      </div>
+    </div>
+
+    <script>
+      // Fonction pour imprimer le calendrier
+      function printCalendar() {
+        window.print();
+      }
+
+      // Ajouter bouton d'impression
+      document.addEventListener("DOMContentLoaded", () => {
+        const container = document.querySelector(".container");
+        const printBtn = document.createElement("button");
+        printBtn.innerHTML = "🖨️ Imprimer ce calendrier";
+        printBtn.style.cssText =
+          "position: fixed; bottom: 20px; right: 20px; padding: 15px 25px; background: #667eea; color: white; border: none; border-radius: 50px; cursor: pointer; font-size: 16px; font-weight: bold; box-shadow: 0 4px 15px rgba(0,0,0,0.2); z-index: 1000;";
+        printBtn.onclick = printCalendar;
+        document.body.appendChild(printBtn);
+      });
+    </script>
+  </body>
+</html>

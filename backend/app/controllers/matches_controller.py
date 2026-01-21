@@ -34,8 +34,8 @@ from schemas.h2h import H2HResponse
 # Helpers
 # =====================
 
-def match_to_response(match: Match) -> MatchResponse:
-    """Convertit un Match en MatchResponse avec prédiction."""
+def match_to_response(match: Match, db: Session = None) -> MatchResponse:
+    """Convertit un Match en MatchResponse avec prédiction et classement."""
     prediction = None
     if match.expert_prediction:
         pred = match.expert_prediction
@@ -64,6 +64,36 @@ def match_to_response(match: Match) -> MatchResponse:
             ma_logique_tip=getattr(pred, 'ma_logique_tip', None)
         )
     
+    # Récupérer les données de classement si DB session fournie
+    home_position, home_points = None, None
+    away_position, away_points = None, None
+    
+    if db and match.home_team_id and match.competition_code:
+        from models.standing import Standing
+        from datetime import datetime
+        current_season = match.match_date.year if match.match_date else datetime.now().year
+        
+        # Classement équipe domicile
+        home_standing = db.query(Standing).filter(
+            Standing.team_id == match.home_team_id,
+            Standing.competition_code == match.competition_code,
+            Standing.season == current_season
+        ).first()
+        if home_standing:
+            home_position = home_standing.position
+            home_points = home_standing.points
+        
+        # Classement équipe extérieur  
+        if match.away_team_id:
+            away_standing = db.query(Standing).filter(
+                Standing.team_id == match.away_team_id,
+                Standing.competition_code == match.competition_code,
+                Standing.season == current_season
+            ).first()
+            if away_standing:
+                away_position = away_standing.position
+                away_points = away_standing.points
+    
     return MatchResponse(
         id=match.id,
         external_id=match.external_id,
@@ -73,9 +103,13 @@ def match_to_response(match: Match) -> MatchResponse:
         home_team=match.home_team,
         home_team_short=match.home_team_short,
         home_team_crest=match.home_team_crest,
+        home_standing_position=home_position,
+        home_standing_points=home_points,
         away_team=match.away_team,
         away_team_short=match.away_team_short,
         away_team_crest=match.away_team_crest,
+        away_standing_position=away_position,
+        away_standing_points=away_points,
         match_date=match.match_date,
         status=match.status,
         score_home=match.score_home,
@@ -122,7 +156,7 @@ def get_matches(
     
     # Trier par date décroissante (matchs récents/à venir en premier)
     matches = query.order_by(Match.match_date.desc()).limit(limit).all()
-    match_responses = [match_to_response(m) for m in matches]
+    match_responses = [match_to_response(m, db) for m in matches]
     
     return MatchListResponse(count=len(match_responses), matches=match_responses)
 
@@ -131,7 +165,7 @@ def get_upcoming_matches(db: Session, limit: int = 20) -> MatchListResponse:
     """Récupère les prochains matchs programmés."""
     sync_service = MatchSyncService(db)
     matches = sync_service.get_upcoming_matches(limit=limit)
-    match_responses = [match_to_response(m) for m in matches]
+    match_responses = [match_to_response(m, db) for m in matches]
     
     return MatchListResponse(count=len(match_responses), matches=match_responses)
 
@@ -140,7 +174,7 @@ def get_today_matches(db: Session) -> MatchListResponse:
     """Récupère les matchs du jour."""
     sync_service = MatchSyncService(db)
     matches = sync_service.get_matches_by_date()
-    match_responses = [match_to_response(m) for m in matches]
+    match_responses = [match_to_response(m, db) for m in matches]
     
     return MatchListResponse(count=len(match_responses), matches=match_responses)
 
@@ -152,7 +186,7 @@ def get_match_by_id(db: Session, match_id: int) -> MatchResponse:
     if not match:
         raise HTTPException(status_code=404, detail="Match non trouvé")
     
-    return match_to_response(match)
+    return match_to_response(match, db)
 
 
 async def get_match_prediction(db: Session, match_id: int) -> PredictionResponse:

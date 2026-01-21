@@ -43,9 +43,13 @@ class MatchResponse(BaseModel):
     home_team: str
     home_team_short: Optional[str] = None
     home_team_crest: Optional[str] = None
+    home_standing_position: Optional[int] = None
+    home_standing_points: Optional[int] = None
     away_team: str
     away_team_short: Optional[str] = None
     away_team_crest: Optional[str] = None
+    away_standing_position: Optional[int] = None
+    away_standing_points: Optional[int] = None
     
     # Date et statut
     match_date: datetime
