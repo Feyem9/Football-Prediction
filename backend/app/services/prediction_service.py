@@ -89,6 +89,86 @@ class PredictionService:
         self.db = db
         self._standings_cache: Dict[str, List[dict]] = {}
     
+    def _check_upcoming_important_match(self, team_id: int, match_date: datetime, days: int = 3) -> Optional[dict]:
+        """
+        Vérifie si une équipe a un match important dans les N prochains jours.
+        
+        Args:
+            team_id: ID de l'équipe
+            match_date: Date du match actuel
+            days: Nombre de jours à vérifier (par défaut 3)
+            
+        Returns:
+            Dict avec infos du match important ou None
+        """
+        from models.match import Match
+        from datetime import timedelta
+        
+        # Compétitions considérées comme importantes
+        important_competitions = ['CL', 'EL', 'FAC', 'FLC']  # CL, Europa League, FA Cup, League Cup
+        
+        # Chercher matchs de l'équipe dans les N jours suivants
+        start_date = match_date
+        end_date = match_date + timedelta(days=days)
+        
+        upcoming_match = self.db.query(Match).filter(
+            Match.match_date > start_date,
+            Match.match_date <= end_date,
+            Match.competition_code.in_(important_competitions)
+        ).filter(
+            (Match.home_team_id == team_id) | (Match.away_team_id == team_id)
+        ).order_by(Match.match_date.asc()).first()
+        
+        if upcoming_match:
+            return {
+                'competition': upcoming_match.competition_name,
+                'opponent': upcoming_match.away_team if upcoming_match.home_team_id == team_id else upcoming_match.home_team,
+                'date': upcoming_match.match_date,
+                'days_until': (upcoming_match.match_date - match_date).days
+            }
+        return None
+    
+    def _check_recent_important_match(self, team_id: int, match_date: datetime, days: int = 3) -> Optional[dict]:
+        """
+        Vérifie si une équipe a joué un match important dans les N derniers jours.
+        
+        Args:
+            team_id: ID de l'équipe
+            match_date: Date du match actuel
+            days: Nombre de jours à vérifier (par défaut 3)
+            
+        Returns:
+            Dict avec infos du match important ou None
+        """
+        from models.match import Match
+        from datetime import timedelta
+        
+        # Compétitions considérées comme importantes
+        important_competitions = ['CL', 'EL', 'FAC', 'FLC']
+        
+        # Chercher matchs de l'équipe dans les N jours précédents
+        start_date = match_date - timedelta(days=days)
+        end_date = match_date
+        
+        recent_match = self.db.query(Match).filter(
+            Match.match_date >= start_date,
+            Match.match_date < end_date,
+            Match.competition_code.in_(important_competitions),
+            Match.status == 'FINISHED'  # Match déjà joué
+        ).filter(
+            (Match.home_team_id == team_id) | (Match.away_team_id == team_id)
+        ).order_by(Match.match_date.desc()).first()
+        
+        if recent_match:
+            return {
+                'competition': recent_match.competition_name,
+                'opponent': recent_match.away_team if recent_match.home_team_id == team_id else recent_match.home_team,
+                'date': recent_match.match_date,
+                'days_ago': (match_date - recent_match.match_date).days,
+                'score': f"{recent_match.score_home}-{recent_match.score_away}"
+            }
+        return None
+    
     async def _get_standings(self, competition_code: str) -> List[dict]:
         """
         Récupère le classement avec cache.
@@ -472,6 +552,54 @@ class PredictionService:
             home_goals_avg, away_goals_avg
         )
         papa_confidence = min(0.9, 0.5 + abs(home_strength - away_strength) * 0.5)
+        
+        # === AJUSTEMENT PAPA : Matchs importants ===
+        # Vérifier si les équipes ont des matchs importants proches
+        home_upcoming = None
+        home_recent = None
+        away_upcoming = None
+        away_recent = None
+        
+        if match.home_team_id and match.match_date:
+            home_upcoming = self._check_upcoming_important_match(match.home_team_id, match.match_date)
+            home_recent = self._check_recent_important_match(match.home_team_id, match.match_date)
+        
+        if match.away_team_id and match.match_date:
+            away_upcoming = self._check_upcoming_important_match(match.away_team_id, match.match_date)
+            away_recent = self._check_recent_important_match(match.away_team_id, match.match_date)
+        
+        # Ajuster la force et la confiance selon les matchs importants
+        rotation_factor_home = 1.0
+        rotation_factor_away = 1.0
+        
+        if home_upcoming:
+            # Équipe domicile a un match important à venir → risque de rotation
+            papa_confidence *= 0.85  # Réduire confiance de 15%
+            rotation_factor_home = 0.90  # Réduire force de 10%
+            
+        if home_recent:
+            # Équipe domicile vient de jouer un match important → fatigue possible
+            papa_confidence *= 0.90  # Réduire confiance de 10%
+            rotation_factor_home *=0.92  # Réduire force de 8%
+            
+        if away_upcoming:
+            # Équipe extérieur a un match important à venir
+            papa_confidence *= 0.85
+            rotation_factor_away = 0.90
+            
+        if away_recent:
+            # Équipe extérieur vient de jouer un match important
+            papa_confidence *= 0.90
+            rotation_factor_away *= 0.92
+        
+        # Recalculer le score avec les facteurs d'ajustement
+        if rotation_factor_home != 1.0 or rotation_factor_away != 1.0:
+            papa_home_score, papa_away_score = self._predict_score(
+                papa_home_strength * rotation_factor_home,
+                papa_away_strength * rotation_factor_away,
+                home_goals_avg, away_goals_avg
+            )
+        
         papa_tip = self._generate_bet_tip(papa_home_score, papa_away_score, papa_confidence)
         
         # === LOGIQUE GRAND FRÈRE (H2H + Loi Domicile) ===
@@ -530,6 +658,13 @@ class PredictionService:
             h2h_stats
         )
         
+        # Sérialiser les données des matchs importants en JSON
+        import json
+        home_upcoming_json = json.dumps(home_upcoming) if home_upcoming else None
+        home_recent_json = json.dumps(home_recent) if home_recent else None
+        away_upcoming_json = json.dumps(away_upcoming) if away_upcoming else None
+        away_recent_json = json.dumps(away_recent) if away_recent else None
+        
         # Créer la prédiction avec les 3 logiques
         prediction = ExpertPrediction(
             match_id=match.id,
@@ -555,7 +690,12 @@ class PredictionService:
             ma_logique_home_score=ml_home_score,
             ma_logique_away_score=ml_away_score,
             ma_logique_confidence=round(ml_confidence, 2),
-            ma_logique_tip=ml_tip
+            ma_logique_tip=ml_tip,
+            # Matchs importants (contexte Papa)
+            home_upcoming_important=home_upcoming_json,
+            home_recent_important=home_recent_json,
+            away_upcoming_important=away_upcoming_json,
+            away_recent_important=away_recent_json
         )
         
         self.db.add(prediction)

@@ -12,6 +12,15 @@ export default function MatchDetail() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  const parseImportantMatch = (jsonStr?: string) => {
+    if (!jsonStr) return null;
+    try {
+      return JSON.parse(jsonStr);
+    } catch (e) {
+      return null;
+    }
+  };
+
   useEffect(() => {
     async function fetchData() {
       if (!id) return;
@@ -355,34 +364,76 @@ export default function MatchDetail() {
                       </p>
                     </div>
 
-                    {/* Matchs importants à venir - EN DÉVELOPPEMENT */}
+                    {/* Matchs importants à venir */}
                     <div className="bg-yellow-900/20 border border-yellow-500/30 rounded-lg p-3">
                       <p className="text-yellow-400 font-bold mb-2">🔜 Match important à venir (3 jours) :</p>
-                      <p className="text-xs text-yellow-300 mb-2">
-                        ⏳ <strong>Fonctionnalité en développement</strong>
-                      </p>
-                      <p className="text-xs text-slate-400 italic leading-relaxed">
-                        💡 <strong>Ce que Papa vérifiera bientôt :</strong> Si une équipe a un gros match 
-                        (Champions League, Coupe, derby) dans les 3 prochains jours, elle peut "tourner" 
-                        (faire jouer les remplaçants) pour préserver les titulaires. Cela réduit les 
-                        chances de victoire dans ce match. Exemple : Si le PSG joue contre Lorient samedi 
-                        et a un match de CL mardi, le coach peut faire tourner l'effectif samedi.
-                      </p>
+                      
+                      {(() => {
+                        const homeUp = parseImportantMatch(prediction.home_upcoming_important);
+                        const awayUp = parseImportantMatch(prediction.away_upcoming_important);
+                        
+                        if (!homeUp && !awayUp) {
+                          return (
+                            <p className="text-xs text-slate-400 italic">
+                              Aucun match de coupe ou de ligue des champions détecté pour les deux équipes dans les 3 prochains jours.
+                            </p>
+                          );
+                        }
+
+                        return (
+                          <div className="space-y-2">
+                            {homeUp && (
+                              <div className="text-xs p-2 bg-yellow-500/10 rounded border border-yellow-500/20">
+                                <span className="text-white font-bold">{match.home_team}</span> joue en <span className="text-yellow-300">{homeUp.competition}</span> contre <span className="font-semibold text-white">{homeUp.opponent}</span> dans <span className="text-yellow-300">{homeUp.days_until} jours</span>.
+                              </div>
+                            )}
+                            {awayUp && (
+                              <div className="text-xs p-2 bg-yellow-500/10 rounded border border-yellow-500/20">
+                                <span className="text-white font-bold">{match.away_team}</span> joue en <span className="text-yellow-300">{awayUp.competition}</span> contre <span className="font-semibold text-white">{awayUp.opponent}</span> dans <span className="text-yellow-300">{awayUp.days_until} jours</span>.
+                              </div>
+                            )}
+                            <p className="text-[10px] text-slate-400 italic mt-2">
+                              💡 Papa a réduit la confiance car le coach pourrait faire tourner l'effectif.
+                            </p>
+                          </div>
+                        );
+                      })()}
                     </div>
                     
-                    {/* Matchs importants récents - EN DÉVELOPPEMENT */}
+                    {/* Matchs importants récents */}
                     <div className="bg-orange-900/20 border border-orange-500/30 rounded-lg p-3">
                       <p className="text-orange-400 font-bold mb-2">⏮️ Match important récent (3 jours) :</p>
-                      <p className="text-xs text-orange-300 mb-2">
-                        ⏳ <strong>Fonctionnalité en développement</strong>
-                      </p>
-                      <p className="text-xs text-slate-400 italic leading-relaxed">
-                        💡 <strong>Ce que Papa vérifiera bientôt :</strong> Si une équipe vient de jouer 
-                        un gros match intense il y a moins de 3 jours, elle peut être <strong>fatiguée</strong> 
-                        physiquement et mentalement. Cela peut réduire ses performances. Exemple : Si Manchester 
-                        City a joué contre le Real Madrid mercredi en CL (match très intense), jouer samedi 
-                        en championnat sera plus difficile (moins de récupération).
-                      </p>
+                      
+                      {(() => {
+                        const homeRec = parseImportantMatch(prediction.home_recent_important);
+                        const awayRec = parseImportantMatch(prediction.away_recent_important);
+                        
+                        if (!homeRec && !awayRec) {
+                          return (
+                            <p className="text-xs text-slate-400 italic">
+                              Aucun match intense récent détecté pour les deux équipes dans les 3 derniers jours.
+                            </p>
+                          );
+                        }
+
+                        return (
+                          <div className="space-y-2">
+                            {homeRec && (
+                              <div className="text-xs p-2 bg-orange-500/10 rounded border border-orange-500/20">
+                                <span className="text-white font-bold">{match.home_team}</span> a joué en <span className="text-orange-300">{homeRec.competition}</span> il y a <span className="text-orange-300">{homeRec.days_ago} jours</span> (Score: {homeRec.score}).
+                              </div>
+                            )}
+                            {awayRec && (
+                              <div className="text-xs p-2 bg-orange-500/10 rounded border border-orange-500/20">
+                                <span className="text-white font-bold">{match.away_team}</span> a joué en <span className="text-orange-300">{awayRec.competition}</span> il y a <span className="text-orange-300">{awayRec.days_ago} jours</span> (Score: {awayRec.score}).
+                              </div>
+                            )}
+                            <p className="text-[10px] text-slate-400 italic mt-2">
+                              💡 Papa a pris en compte la fatigue physique possible des joueurs.
+                            </p>
+                          </div>
+                        );
+                      })()}
                     </div>
 
                     {/* Résumé final */}
@@ -392,7 +443,7 @@ export default function MatchDetail() {
                         <li>• Équipe mieux classée = Plus de chances de gagner</li>
                         <li>• Gros écart de points = Avantage significatif</li>
                         <li>• Championnat relevé = Équipes plus fortes</li>
-                        <li>• (Bientôt) Match important proche = Risque de rotation/fatigue</li>
+                        <li>• Match important proche = Risque de rotation/fatigue</li>
                       </ul>
                     </div>
                   </div>

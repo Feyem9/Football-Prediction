@@ -155,6 +155,12 @@ class PredictionSummary(BaseModel):
     ma_logique_away_score: Optional[int] = None
     ma_logique_confidence: Optional[float] = None
     ma_logique_tip: Optional[str] = None
+    
+    # Matchs importants (contexte Papa)
+    home_upcoming_important: Optional[str] = None
+    home_recent_important: Optional[str] = None
+    away_upcoming_important: Optional[str] = None
+    away_recent_important: Optional[str] = None
 
 
 class PredictionResponse(BaseModel):

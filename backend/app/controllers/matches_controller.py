@@ -61,7 +61,12 @@ def match_to_response(match: Match, db: Session = None) -> MatchResponse:
             ma_logique_home_score=getattr(pred, 'ma_logique_home_score', None),
             ma_logique_away_score=getattr(pred, 'ma_logique_away_score', None),
             ma_logique_confidence=getattr(pred, 'ma_logique_confidence', None),
-            ma_logique_tip=getattr(pred, 'ma_logique_tip', None)
+            ma_logique_tip=getattr(pred, 'ma_logique_tip', None),
+            # Matchs importants
+            home_upcoming_important=getattr(pred, 'home_upcoming_important', None),
+            home_recent_important=getattr(pred, 'home_recent_important', None),
+            away_upcoming_important=getattr(pred, 'away_upcoming_important', None),
+            away_recent_important=getattr(pred, 'away_recent_important', None)
         )
     
     # Récupérer les données de classement si DB session fournie

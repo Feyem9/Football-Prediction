@@ -45,5 +45,12 @@ class ExpertPrediction(Base):
     ma_logique_away_score = Column(Integer, nullable=True)
     ma_logique_confidence = Column(Float, nullable=True)
     ma_logique_tip = Column(String, nullable=True)
+    
+    # === Matchs importants (données contextuelles pour Papa) ===
+    # Format JSON: {"competition": "...", "opponent": "...", "date": "...", "days_until": N}
+    home_upcoming_important = Column(String, nullable=True)  # Match important à venir (domicile)
+    home_recent_important = Column(String, nullable=True)    # Match important récent (domicile)
+    away_upcoming_important = Column(String, nullable=True)  # Match important à venir (extérieur)
+    away_recent_important = Column(String, nullable=True)    # Match important récent (extérieur)
 
     match = relationship("Match", back_populates="expert_prediction")
