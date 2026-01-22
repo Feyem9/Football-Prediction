@@ -16,7 +16,7 @@ export default function MatchDetail() {
     if (!jsonStr) return null;
     try {
       return JSON.parse(jsonStr);
-    } catch (e) {
+    } catch {
       return null;
     }
   };
@@ -481,9 +481,63 @@ export default function MatchDetail() {
                   </span>
                 </div>
 
-                <p className="text-xs text-slate-400 italic">
+                <p className="text-xs text-slate-400 italic mb-4">
                   "{prediction.grand_frere_tip ? `Grand Frère dit : ${prediction.grand_frere_tip}` : 'Pas de conseil Grand Frère'}"
                 </p>
+
+                {/* PREUVES Grand Frère */}
+                <div className="border-t border-blue-500/20 pt-4 mt-4">
+                  <p className="text-xs text-blue-400 uppercase tracking-wide mb-3 flex items-center gap-2 font-bold">
+                    <span>🏠</span> PREUVES - HISTORIQUE & DOMICILE
+                  </p>
+                  
+                  <div className="space-y-3 text-xs">
+                    {/* H2H Stats */}
+                    <div className="bg-slate-800/50 rounded-lg p-3">
+                      <p className="text-blue-400 font-bold mb-2">⚔️ Face-à-Face (H2H) :</p>
+                      <div className="grid grid-cols-3 gap-2 text-center">
+                        <div className="bg-slate-700/50 p-2 rounded">
+                          <p className="text-white font-bold text-lg">{prediction.h2h_home_wins || 0}</p>
+                          <p className="text-[10px] text-slate-400 uppercase">Gagnés {match.home_team}</p>
+                        </div>
+                        <div className="bg-slate-700/50 p-2 rounded">
+                          <p className="text-white font-bold text-lg">{prediction.h2h_draws || 0}</p>
+                          <p className="text-[10px] text-slate-400 uppercase">Nuls</p>
+                        </div>
+                        <div className="bg-slate-700/50 p-2 rounded">
+                          <p className="text-white font-bold text-lg">{prediction.h2h_away_wins || 0}</p>
+                          <p className="text-[10px] text-slate-400 uppercase">Gagnés {match.away_team}</p>
+                        </div>
+                      </div>
+                      <p className="text-[10px] text-slate-400 italic mt-2">
+                        💡 Grand Frère regarde les 10 dernières confrontations pour voir qui a l'ascendant psychologique.
+                      </p>
+                    </div>
+
+                    {/* Home Advantage */}
+                    <div className="bg-slate-800/50 rounded-lg p-3">
+                      <p className="text-blue-400 font-bold mb-2">🏡 Avantage Domicile :</p>
+                      <div className="flex justify-between items-center bg-blue-500/10 border border-blue-500/20 p-2 rounded text-white">
+                        <span>Impact sur la force</span>
+                        <span className="font-bold">+15% pour {match.home_team}</span>
+                      </div>
+                      <p className="text-[10px] text-slate-400 italic mt-2">
+                        💡 Jouer à domicile donne un boost de confiance et de force. Grand Frère ajoute systématiquement 
+                        un bonus à l'équipe qui reçoit pour simuler la poussée des supporters.
+                      </p>
+                    </div>
+
+                    {/* Résumé Grand Frère */}
+                    <div className="bg-blue-900/30 border border-blue-500/50 rounded-lg p-3">
+                      <p className="text-blue-300 font-bold mb-2">✅ EN RÉSUMÉ - Grand Frère :</p>
+                      <ul className="space-y-1 text-xs text-slate-300">
+                        <li>• Historique favorable = Avantage confiance</li>
+                        <li>• Jeu à domicile = Bonus de force</li>
+                        <li>• Nuls fréquents = Prudence sur le résultat</li>
+                      </ul>
+                    </div>
+                  </div>
+                </div>
               </div>
 
               {/* Ma Logique */}
@@ -517,9 +571,76 @@ export default function MatchDetail() {
                   </span>
                 </div>
 
-                <p className="text-xs text-slate-400 italic">
+                <p className="text-xs text-slate-400 italic mb-4">
                   "{prediction.ma_logique_tip ? `Ma Logique suggère : ${prediction.ma_logique_tip}` : 'Pas de conseil Ma Logique'}"
                 </p>
+
+                {/* PREUVES Ma Logique */}
+                <div className="border-t border-purple-500/20 pt-4 mt-4">
+                  <p className="text-xs text-purple-400 uppercase tracking-wide mb-3 flex items-center gap-2 font-bold">
+                    <span>🟣</span> PREUVES - FORME RÉCENTE
+                  </p>
+                  
+                  <div className="space-y-3 text-xs">
+                    {/* Form Scores */}
+                    <div className="bg-slate-800/50 rounded-lg p-3">
+                      <p className="text-purple-400 font-bold mb-3">📈 Score de forme (derniers matchs) :</p>
+                      
+                      <div className="space-y-4">
+                        <div>
+                          <div className="flex justify-between text-[10px] mb-1">
+                            <span className="text-slate-400">{match.home_team}</span>
+                            <span className="text-purple-300 font-bold">{Math.round((prediction.home_form_score || 0.5) * 100)}%</span>
+                          </div>
+                          <div className="h-2 bg-slate-700 rounded-full overflow-hidden">
+                            <div 
+                              className="h-full bg-gradient-to-r from-purple-500 to-pink-500 transition-all duration-1000"
+                              style={{ width: `${(prediction.home_form_score || 0.5) * 100}%` }}
+                            ></div>
+                          </div>
+                        </div>
+
+                        <div>
+                          <div className="flex justify-between text-[10px] mb-1">
+                            <span className="text-slate-400">{match.away_team}</span>
+                            <span className="text-purple-300 font-bold">{Math.round((prediction.away_form_score || 0.5) * 100)}%</span>
+                          </div>
+                          <div className="h-2 bg-slate-700 rounded-full overflow-hidden">
+                            <div 
+                              className="h-full bg-gradient-to-r from-purple-500 to-pink-500 transition-all duration-1000"
+                              style={{ width: `${(prediction.away_form_score || 0.5) * 100}%` }}
+                            ></div>
+                          </div>
+                        </div>
+                      </div>
+
+                      <p className="text-[10px] text-slate-400 italic mt-3 leading-relaxed">
+                        💡 Ma Logique calcule ce score en regardant les résultats des 10 derniers matchs. 
+                        Une victoire rapporte plus de points qu'un nul. Une série de victoires augmente drastiquement 
+                        la "chaleur" de l'équipe.
+                      </p>
+                    </div>
+
+                    {/* Consensus info */}
+                    <div className="bg-slate-800/50 rounded-lg p-3">
+                      <p className="text-purple-400 font-bold mb-2">🤝 Double Validation :</p>
+                      <p className="text-[10px] text-slate-300">
+                        Ma Logique agit comme un arbitre. Elle regarde ce que Papa et Grand Frère disent. 
+                        Si les deux sont d'accord, elle booste la confiance. Si ils divergent, elle tempère.
+                      </p>
+                    </div>
+
+                    {/* Résumé Ma Logique */}
+                    <div className="bg-purple-900/30 border border-purple-500/50 rounded-lg p-3">
+                      <p className="text-purple-300 font-bold mb-2">✅ EN RÉSUMÉ - Ma Logique :</p>
+                      <ul className="space-y-1 text-xs text-slate-300">
+                        <li>• Équipe "chaude" = Dynamique positive</li>
+                        <li>• Validation croisée = Sécurité accrue</li>
+                        <li>• Forme &gt; Classement = Surprise possible</li>
+                      </ul>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
 

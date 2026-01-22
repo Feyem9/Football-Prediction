@@ -57,6 +57,13 @@ export interface PredictionSummary {
   home_recent_important?: string;
   away_upcoming_important?: string;
   away_recent_important?: string;
+  
+  // Données pour Preuves
+  h2h_home_wins?: number;
+  h2h_away_wins?: number;
+  h2h_draws?: number;
+  home_form_score?: number;
+  away_form_score?: number;
 }
 
 export interface LogicEvidence {
