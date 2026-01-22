@@ -200,6 +200,93 @@ export default function MatchDetail() {
                   </span>
                 </div>
 
+                {/* CALCUL DÉTAILLÉ - Comment Papa a obtenu ce résultat */}
+                {match.home_standing_position && match.away_standing_position && (
+                  <div className="bg-slate-900/50 border border-green-500/30 rounded-lg p-3 mb-4 mt-4">
+                    <p className="text-xs text-green-300 font-bold mb-3 flex items-center gap-2">
+                      🧮 CALCUL PAPA - Étape par étape :
+                    </p>
+                    
+                    <div className="space-y-3 text-xs">
+                      {/* Étape 1 : Force brute basée sur position */}
+                      <div className="bg-slate-800/50 rounded p-2">
+                        <p className="text-green-400 font-semibold mb-1">1️⃣ Force basée sur la position :</p>
+                        <div className="text-slate-300 space-y-1 pl-3">
+                          <p>
+                            • {match.home_team} : Position #{match.home_standing_position} 
+                            → Force = 1 - ({match.home_standing_position}/20) 
+                            = <strong className="text-white">
+                              {(1 - match.home_standing_position / 20).toFixed(2)}
+                            </strong> (={((1 - match.home_standing_position / 20) * 100).toFixed(0)}%)
+                          </p>
+                          <p>
+                            • {match.away_team} : Position #{match.away_standing_position} 
+                            → Force = 1 - ({match.away_standing_position}/20) 
+                            = <strong className="text-white">
+                              {(1 - match.away_standing_position / 20).toFixed(2)}
+                            </strong> (={((1 - match.away_standing_position / 20) * 100).toFixed(0)}%)
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* Étape 2 : Ajustement niveau ligue */}
+                      <div className="bg-slate-800/50 rounded p-2">
+                        <p className="text-green-400 font-semibold mb-1">2️⃣ Ajustement niveau ligue :</p>
+                        <div className="text-slate-300 space-y-1 pl-3">
+                          <p>
+                            • Niveau {match.competition_name} = <strong className="text-white">85%</strong> (estimation)
+                          </p>
+                          <p>
+                            • Force ajustée {match.home_team} = {(1 - match.home_standing_position / 20).toFixed(2)} × 0.85 
+                            = <strong className="text-green-400">
+                              {((1 - match.home_standing_position / 20) * 0.85).toFixed(2)}
+                            </strong>
+                          </p>
+                          <p>
+                            • Force ajustée {match.away_team} = {(1 - match.away_standing_position / 20).toFixed(2)} × 0.85 
+                            = <strong className="text-blue-400">
+                              {((1 - match.away_standing_position / 20) * 0.85).toFixed(2)}
+                            </strong>
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* Étape 3 : Différence et prédiction */}
+                      <div className="bg-slate-800/50 rounded p-2">
+                        <p className="text-green-400 font-semibold mb-1">3️⃣ Prédiction finale :</p>
+                        <div className="text-slate-300 space-y-1 pl-3">
+                          <p>
+                            • Écart = {((1 - match.home_standing_position / 20) * 0.85).toFixed(2)} 
+                            - {((1 - match.away_standing_position / 20) * 0.85).toFixed(2)} 
+                            = <strong className="text-white">
+                              {(((1 - match.home_standing_position / 20) - (1 - match.away_standing_position / 20)) * 0.85).toFixed(2)}
+                            </strong>
+                          </p>
+                          <p>
+                            • {Math.abs(((1 - match.home_standing_position / 20) - (1 - match.away_standing_position / 20)) * 0.85) > 0.15 
+                              ? (((1 - match.home_standing_position / 20) - (1 - match.away_standing_position / 20)) * 0.85) > 0 
+                                ? "✅ Écart significatif → Domicile favori" 
+                                : "✅ Écart significatif → Extérieur favori"
+                              : "⚖️ Écart faible → Match équilibré"}
+                          </p>
+                          <p className="text-green-300 font-bold mt-2">
+                            → Résultat Papa : {prediction.papa_home_score} - {prediction.papa_away_score}
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* Note explicative */}
+                      <div className="border-t border-slate-700 pt-2">
+                        <p className="text-slate-400 italic text-[10px] leading-relaxed">
+                          💡 <strong>Note :</strong> Papa multiplie la force par la moyenne de buts de chaque équipe, 
+                          puis ajuste selon l'écart (+20% pour le favori, -20% pour le moins fort). Les scores sont 
+                          arrondis et limités entre 0 et 5 buts.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
                 {/* PREUVES Papa - EXPLICATIONS COMPLÈTES */}
                 <div className="border-t border-green-500/20 pt-4 mt-4">
                   <p className="text-xs text-green-400 uppercase tracking-wide mb-3 flex items-center gap-2 font-bold">
