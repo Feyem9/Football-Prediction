@@ -52,5 +52,12 @@ class ExpertPrediction(Base):
     home_recent_important = Column(String, nullable=True)    # Match important récent (domicile)
     away_upcoming_important = Column(String, nullable=True)  # Match important à venir (extérieur)
     away_recent_important = Column(String, nullable=True)    # Match important récent (extérieur)
+    
+    # === Données pour Preuves (Stats utilisées lors du calcul) ===
+    h2h_home_wins = Column(Integer, nullable=True)
+    h2h_away_wins = Column(Integer, nullable=True)
+    h2h_draws = Column(Integer, nullable=True)
+    home_form_score = Column(Float, nullable=True)
+    away_form_score = Column(Float, nullable=True)
 
     match = relationship("Match", back_populates="expert_prediction")

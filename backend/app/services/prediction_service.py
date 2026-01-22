@@ -5,6 +5,7 @@ Ce service génère des pronostics basés sur les données du classement
 et la forme récente des équipes.
 """
 from typing import Optional, Dict, List, Tuple
+from datetime import datetime, timedelta, timezone
 from sqlalchemy.orm import Session
 
 from models.match import Match
@@ -695,7 +696,13 @@ class PredictionService:
             home_upcoming_important=home_upcoming_json,
             home_recent_important=home_recent_json,
             away_upcoming_important=away_upcoming_json,
-            away_recent_important=away_recent_json
+            away_recent_important=away_recent_json,
+            # Données pour Preuves
+            h2h_home_wins=h2h_stats[0] if h2h_stats else 0,
+            h2h_away_wins=h2h_stats[1] if h2h_stats else 0,
+            h2h_draws=h2h_stats[2] if h2h_stats else 0,
+            home_form_score=round(home_form, 2) if home_form else 0.5,
+            away_form_score=round(away_form, 2) if away_form else 0.5
         )
         
         self.db.add(prediction)

@@ -161,6 +161,13 @@ class PredictionSummary(BaseModel):
     home_recent_important: Optional[str] = None
     away_upcoming_important: Optional[str] = None
     away_recent_important: Optional[str] = None
+    
+    # Données pour Preuves
+    h2h_home_wins: Optional[int] = None
+    h2h_away_wins: Optional[int] = None
+    h2h_draws: Optional[int] = None
+    home_form_score: Optional[float] = None
+    away_form_score: Optional[float] = None
 
 
 class PredictionResponse(BaseModel):
