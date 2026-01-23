@@ -494,18 +494,18 @@ export default function MatchDetail() {
                   <div className="space-y-3 text-xs">
                     {/* H2H Stats */}
                     <div className="bg-slate-800/50 rounded-lg p-3">
-                      <p className="text-blue-400 font-bold mb-2">⚔️ Face-à-Face (H2H) :</p>
+                      <p className="text-blue-400 font-bold mb-2">⚔️ Face-à-Face (H2H) - {prediction.h2h_matches_count || 0} dernières confrontations :</p>
                       <div className="grid grid-cols-3 gap-2 text-center">
                         <div className="bg-slate-700/50 p-2 rounded">
-                          <p className="text-white font-bold text-lg">{prediction.h2h_home_wins || 0}</p>
+                          <p className="text-green-400 font-bold text-lg">{prediction.h2h_home_wins || 0}</p>
                           <p className="text-[10px] text-slate-400 uppercase">Gagnés {match.home_team}</p>
                         </div>
                         <div className="bg-slate-700/50 p-2 rounded">
-                          <p className="text-white font-bold text-lg">{prediction.h2h_draws || 0}</p>
+                          <p className="text-yellow-400 font-bold text-lg">{prediction.h2h_draws || 0}</p>
                           <p className="text-[10px] text-slate-400 uppercase">Nuls</p>
                         </div>
                         <div className="bg-slate-700/50 p-2 rounded">
-                          <p className="text-white font-bold text-lg">{prediction.h2h_away_wins || 0}</p>
+                          <p className="text-red-400 font-bold text-lg">{prediction.h2h_away_wins || 0}</p>
                           <p className="text-[10px] text-slate-400 uppercase">Gagnés {match.away_team}</p>
                         </div>
                       </div>
@@ -514,26 +514,58 @@ export default function MatchDetail() {
                       </p>
                     </div>
 
+                    {/* H2H Goals Analysis */}
+                    <div className="bg-slate-800/50 rounded-lg p-3">
+                      <p className="text-blue-400 font-bold mb-2">⚽ Buts marqués dans les H2H :</p>
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="bg-slate-700/50 p-2 rounded text-center">
+                          <p className="text-white font-bold text-xl">{prediction.h2h_home_goals_total || 0}</p>
+                          <p className="text-[10px] text-slate-400">Total {match.home_team}</p>
+                          <p className="text-blue-300 font-semibold">{prediction.h2h_home_goals_freq || 0} but/match</p>
+                        </div>
+                        <div className="bg-slate-700/50 p-2 rounded text-center">
+                          <p className="text-white font-bold text-xl">{prediction.h2h_away_goals_total || 0}</p>
+                          <p className="text-[10px] text-slate-400">Total {match.away_team}</p>
+                          <p className="text-blue-300 font-semibold">{prediction.h2h_away_goals_freq || 0} but/match</p>
+                        </div>
+                      </div>
+                      <div className="mt-2 p-2 bg-blue-500/10 border border-blue-500/20 rounded">
+                        <p className="text-[10px] text-white">
+                          📊 <strong>Total :</strong> {(prediction.h2h_home_goals_total || 0) + (prediction.h2h_away_goals_total || 0)} buts en {prediction.h2h_matches_count || 0} matchs
+                          {prediction.h2h_top_scorer === "home" && <span className="text-green-400 ml-2">→ {match.home_team} marque plus !</span>}
+                          {prediction.h2h_top_scorer === "away" && <span className="text-red-400 ml-2">→ {match.away_team} marque plus !</span>}
+                          {prediction.h2h_top_scorer === "equal" && <span className="text-yellow-400 ml-2">→ Égalité parfaite !</span>}
+                        </p>
+                      </div>
+                    </div>
+
                     {/* Home Advantage */}
                     <div className="bg-slate-800/50 rounded-lg p-3">
                       <p className="text-blue-400 font-bold mb-2">🏡 Avantage Domicile :</p>
                       <div className="flex justify-between items-center bg-blue-500/10 border border-blue-500/20 p-2 rounded text-white">
-                        <span>Impact sur la force</span>
-                        <span className="font-bold">+15% pour {match.home_team}</span>
+                        <span>Bonus calculé</span>
+                        <span className="font-bold text-green-400">+{Math.round((prediction.gf_home_advantage_bonus || 0.1) * 100)}% pour {match.home_team}</span>
                       </div>
                       <p className="text-[10px] text-slate-400 italic mt-2">
-                        💡 Jouer à domicile donne un boost de confiance et de force. Grand Frère ajoute systématiquement 
-                        un bonus à l'équipe qui reçoit pour simuler la poussée des supporters.
+                        💡 L'avantage domicile est ajusté selon l'écart de force entre les équipes.
                       </p>
                     </div>
+
+                    {/* Verdict Grand Frère */}
+                    {prediction.gf_verdict && (
+                      <div className="bg-blue-900/40 border border-blue-400/50 rounded-lg p-3">
+                        <p className="text-blue-300 font-bold mb-2">🎯 VERDICT GRAND FRÈRE :</p>
+                        <p className="text-white text-sm leading-relaxed">{prediction.gf_verdict}</p>
+                      </div>
+                    )}
 
                     {/* Résumé Grand Frère */}
                     <div className="bg-blue-900/30 border border-blue-500/50 rounded-lg p-3">
                       <p className="text-blue-300 font-bold mb-2">✅ EN RÉSUMÉ - Grand Frère :</p>
                       <ul className="space-y-1 text-xs text-slate-300">
                         <li>• Historique favorable = Avantage confiance</li>
-                        <li>• Jeu à domicile = Bonus de force</li>
-                        <li>• Nuls fréquents = Prudence sur le résultat</li>
+                        <li>• Jeu à domicile = Bonus de force (+{Math.round((prediction.gf_home_advantage_bonus || 0.1) * 100)}%)</li>
+                        <li>• Qui marque le plus ? {prediction.h2h_top_scorer === "home" ? match.home_team : prediction.h2h_top_scorer === "away" ? match.away_team : "Égalité"}</li>
                       </ul>
                     </div>
                   </div>

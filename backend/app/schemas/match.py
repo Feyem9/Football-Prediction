@@ -166,8 +166,20 @@ class PredictionSummary(BaseModel):
     h2h_home_wins: Optional[int] = None
     h2h_away_wins: Optional[int] = None
     h2h_draws: Optional[int] = None
+    h2h_matches_count: Optional[int] = None
+    h2h_home_goals_total: Optional[int] = None
+    h2h_away_goals_total: Optional[int] = None
+    h2h_home_goals_freq: Optional[float] = None
+    h2h_away_goals_freq: Optional[float] = None
+    h2h_top_scorer: Optional[str] = None
     home_form_score: Optional[float] = None
     away_form_score: Optional[float] = None
+    
+    # Grand Frère : Analyse combinée
+    gf_home_league_level: Optional[float] = None
+    gf_away_league_level: Optional[float] = None
+    gf_home_advantage_bonus: Optional[float] = None
+    gf_verdict: Optional[str] = None
 
 
 class PredictionResponse(BaseModel):

@@ -57,7 +57,19 @@ class ExpertPrediction(Base):
     h2h_home_wins = Column(Integer, nullable=True)
     h2h_away_wins = Column(Integer, nullable=True)
     h2h_draws = Column(Integer, nullable=True)
+    h2h_matches_count = Column(Integer, nullable=True)  # Nombre de matchs H2H analysés
+    h2h_home_goals_total = Column(Integer, nullable=True)  # Total buts équipe domicile dans H2H
+    h2h_away_goals_total = Column(Integer, nullable=True)  # Total buts équipe extérieur dans H2H
+    h2h_home_goals_freq = Column(Float, nullable=True)  # Fréquence buts/match équipe domicile
+    h2h_away_goals_freq = Column(Float, nullable=True)  # Fréquence buts/match équipe extérieur
+    h2h_top_scorer = Column(String, nullable=True)  # "home", "away", ou "equal"
     home_form_score = Column(Float, nullable=True)
     away_form_score = Column(Float, nullable=True)
+    
+    # === Grand Frère : Analyse combinée Papa + Domicile ===
+    gf_home_league_level = Column(Float, nullable=True)  # Niveau ligue équipe domicile
+    gf_away_league_level = Column(Float, nullable=True)  # Niveau ligue équipe extérieur
+    gf_home_advantage_bonus = Column(Float, nullable=True)  # Bonus domicile calculé
+    gf_verdict = Column(String, nullable=True)  # Verdict Grand Frère (explication)
 
     match = relationship("Match", back_populates="expert_prediction")

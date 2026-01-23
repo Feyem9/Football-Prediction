@@ -62,8 +62,20 @@ export interface PredictionSummary {
   h2h_home_wins?: number;
   h2h_away_wins?: number;
   h2h_draws?: number;
+  h2h_matches_count?: number;
+  h2h_home_goals_total?: number;
+  h2h_away_goals_total?: number;
+  h2h_home_goals_freq?: number;
+  h2h_away_goals_freq?: number;
+  h2h_top_scorer?: string;
   home_form_score?: number;
   away_form_score?: number;
+  
+  // Grand Frère : Analyse combinée
+  gf_home_league_level?: number;
+  gf_away_league_level?: number;
+  gf_home_advantage_bonus?: number;
+  gf_verdict?: string;
 }
 
 export interface LogicEvidence {

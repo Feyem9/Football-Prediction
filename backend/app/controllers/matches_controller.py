@@ -71,8 +71,19 @@ def match_to_response(match: Match, db: Session = None) -> MatchResponse:
             h2h_home_wins=getattr(pred, 'h2h_home_wins', None),
             h2h_away_wins=getattr(pred, 'h2h_away_wins', None),
             h2h_draws=getattr(pred, 'h2h_draws', None),
+            h2h_matches_count=getattr(pred, 'h2h_matches_count', None),
+            h2h_home_goals_total=getattr(pred, 'h2h_home_goals_total', None),
+            h2h_away_goals_total=getattr(pred, 'h2h_away_goals_total', None),
+            h2h_home_goals_freq=getattr(pred, 'h2h_home_goals_freq', None),
+            h2h_away_goals_freq=getattr(pred, 'h2h_away_goals_freq', None),
+            h2h_top_scorer=getattr(pred, 'h2h_top_scorer', None),
             home_form_score=getattr(pred, 'home_form_score', None),
-            away_form_score=getattr(pred, 'away_form_score', None)
+            away_form_score=getattr(pred, 'away_form_score', None),
+            # Grand Frère : Analyse combinée
+            gf_home_league_level=getattr(pred, 'gf_home_league_level', None),
+            gf_away_league_level=getattr(pred, 'gf_away_league_level', None),
+            gf_home_advantage_bonus=getattr(pred, 'gf_home_advantage_bonus', None),
+            gf_verdict=getattr(pred, 'gf_verdict', None)
         )
     
     # Récupérer les données de classement si DB session fournie

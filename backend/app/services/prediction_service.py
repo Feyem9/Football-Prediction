@@ -394,6 +394,192 @@ class PredictionService:
                 a_wins += 1
                 
         return h_wins, a_wins, draws
+    
+    def _calculate_detailed_h2h_stats(self, matches: List[dict], home_team_id: int, away_team_id: int) -> dict:
+        """
+        Calcule les statistiques H2H détaillées pour Grand Frère.
+        
+        Analyse les 10 dernières confrontations pour extraire :
+        - Victoires/Nuls/Défaites pour chaque équipe
+        - Buts marqués par chaque équipe au total
+        - Fréquence de buts par match pour chaque équipe
+        
+        Args:
+            matches: Liste des matchs H2H
+            home_team_id: ID de l'équipe domicile du match actuel
+            away_team_id: ID de l'équipe extérieur du match actuel
+            
+        Returns:
+            Dict avec toutes les stats détaillées
+        """
+        h_wins = 0
+        a_wins = 0
+        draws = 0
+        home_goals_total = 0  # Buts marqués par l'équipe domicile actuelle
+        away_goals_total = 0  # Buts marqués par l'équipe extérieur actuelle
+        matches_counted = 0
+        
+        for m in matches:
+            if m.get("status") != "FINISHED":
+                continue
+                
+            score = m.get("score", {}).get("fullTime", {})
+            h_score = score.get("home")
+            a_score = score.get("away")
+            
+            if h_score is None or a_score is None:
+                continue
+            
+            matches_counted += 1
+            match_home_id = m.get("homeTeam", {}).get("id")
+            match_away_id = m.get("awayTeam", {}).get("id")
+            
+            # Comptabiliser les buts pour chaque équipe
+            # L'équipe "home_team_id" peut avoir joué à domicile OU à l'extérieur dans ce match
+            if match_home_id == home_team_id:
+                # L'équipe domicile actuelle jouait à domicile dans ce H2H
+                home_goals_total += h_score
+                away_goals_total += a_score
+            elif match_away_id == home_team_id:
+                # L'équipe domicile actuelle jouait à l'extérieur dans ce H2H
+                home_goals_total += a_score
+                away_goals_total += h_score
+            
+            # Comptabiliser victoires/nuls/défaites
+            if h_score > a_score:
+                winner = match_home_id
+            elif a_score > h_score:
+                winner = match_away_id
+            else:
+                draws += 1
+                continue
+                
+            if winner == home_team_id:
+                h_wins += 1
+            elif winner == away_team_id:
+                a_wins += 1
+        
+        # Calculer les fréquences de buts par match
+        home_goals_freq = round(home_goals_total / matches_counted, 2) if matches_counted > 0 else 0
+        away_goals_freq = round(away_goals_total / matches_counted, 2) if matches_counted > 0 else 0
+        
+        # Déterminer qui marque le plus
+        top_scorer = "equal"
+        if home_goals_total > away_goals_total:
+            top_scorer = "home"
+        elif away_goals_total > home_goals_total:
+            top_scorer = "away"
+        
+        return {
+            "home_wins": h_wins,
+            "away_wins": a_wins,
+            "draws": draws,
+            "matches_counted": matches_counted,
+            "home_goals_total": home_goals_total,
+            "away_goals_total": away_goals_total,
+            "total_goals": home_goals_total + away_goals_total,
+            "home_goals_freq": home_goals_freq,
+            "away_goals_freq": away_goals_freq,
+            "top_scorer": top_scorer
+        }
+    
+    def _generate_gf_verdict(
+        self,
+        home_strength: float,
+        away_strength: float,
+        home_form: float,
+        away_form: float,
+        home_h2h: float,
+        away_h2h: float,
+        home_league_level: float,
+        away_league_level: float,
+        h2h_detailed: Optional[dict],
+        home_team: str,
+        away_team: str
+    ) -> str:
+        """
+        Génère le verdict de Grand Frère basé sur l'analyse combinée.
+        
+        Prend en compte:
+        - H2H (qui gagne historiquement)
+        - Niveau de ligue (force du championnat)
+        - Forme actuelle
+        - Avantage domicile
+        
+        Returns:
+            Verdict textuel expliquant la prédiction
+        """
+        verdict_parts = []
+        
+        # 1. Analyser le H2H
+        if h2h_detailed:
+            h_wins = h2h_detailed.get("home_wins", 0)
+            a_wins = h2h_detailed.get("away_wins", 0)
+            draws = h2h_detailed.get("draws", 0)
+            total_goals = h2h_detailed.get("total_goals", 0)
+            h_goals = h2h_detailed.get("home_goals_total", 0)
+            a_goals = h2h_detailed.get("away_goals_total", 0)
+            matches = h2h_detailed.get("matches_counted", 0)
+            
+            if matches > 0:
+                if h_wins > a_wins + 2:
+                    verdict_parts.append(f"{home_team} domine clairement les H2H ({h_wins}V-{draws}N-{a_wins}D)")
+                elif a_wins > h_wins + 2:
+                    verdict_parts.append(f"{away_team} domine clairement les H2H ({a_wins}V-{draws}N-{h_wins}D)")
+                elif draws >= h_wins and draws >= a_wins:
+                    verdict_parts.append(f"Les H2H sont équilibrés avec beaucoup de nuls ({draws}N sur {matches} matchs)")
+                else:
+                    verdict_parts.append(f"H2H serré: {home_team} {h_wins}V vs {away_team} {a_wins}V")
+                
+                # Analyse des buts
+                if total_goals > 0:
+                    if h_goals > a_goals * 1.5:
+                        verdict_parts.append(f"{home_team} marque plus en H2H ({h_goals} buts vs {a_goals})")
+                    elif a_goals > h_goals * 1.5:
+                        verdict_parts.append(f"{away_team} marque plus en H2H ({a_goals} buts vs {h_goals})")
+        
+        # 2. Analyser le niveau et la force
+        # Déterminer si équipe est forte/moyenne/faible
+        def get_team_level(strength: float, form: float) -> str:
+            combined = (strength + form) / 2
+            if combined >= 0.7:
+                return "forte"
+            elif combined >= 0.4:
+                return "moyenne"
+            else:
+                return "faible"
+        
+        home_level = get_team_level(home_strength, home_form)
+        away_level = get_team_level(away_strength, away_form)
+        
+        # 3. Appliquer la loi de Grand Frère
+        if home_level == "moyenne" and away_level == "forte":
+            if home_league_level >= away_league_level:
+                # Même niveau de ligue → le moyen à domicile peut tenir le nul
+                verdict_parts.append(f"{home_team} (équipe moyenne) peut tenir le nul à domicile contre {away_team}")
+            else:
+                # Ligue extérieure plus forte → l'extérieur peut gagner
+                verdict_parts.append(f"{away_team} (équipe forte, ligue supérieure) a l'avantage malgré le déplacement")
+        elif home_level == "forte" and away_level == "moyenne":
+            verdict_parts.append(f"{home_team} (équipe forte) devrait s'imposer à domicile")
+        elif home_level == "forte" and away_level == "forte":
+            verdict_parts.append(f"Choc au sommet! Deux équipes fortes, l'avantage domicile peut faire la différence")
+        elif home_level == "moyenne" and away_level == "moyenne":
+            verdict_parts.append(f"Match équilibré entre deux équipes moyennes, avantage léger à {home_team} (domicile)")
+        elif home_level == "faible":
+            if away_level == "forte":
+                verdict_parts.append(f"{away_team} (équipe forte) devrait s'imposer même à l'extérieur")
+            else:
+                verdict_parts.append(f"Match difficile pour {home_team}, mais le domicile peut aider")
+        
+        # 4. Forme récente
+        if abs(home_form - away_form) > 0.3:
+            if home_form > away_form:
+                verdict_parts.append(f"{home_team} est en meilleure forme actuellement")
+            else:
+                verdict_parts.append(f"{away_team} est en meilleure forme actuellement")
+        
+        return " | ".join(verdict_parts) if verdict_parts else "Analyse équilibrée, match ouvert"
 
     def _generate_analysis(
         self,
@@ -516,8 +702,9 @@ class PredictionService:
             away_form = 0.5
             away_goals_avg = 1.2
         
-        # Récupérer H2H
+        # Récupérer H2H avec stats détaillées pour Grand Frère
         h2h_stats = None
+        h2h_detailed = None
         home_h2h = 0.5
         away_h2h = 0.5
         
@@ -528,10 +715,17 @@ class PredictionService:
                 matches = h2h_data.get("matches", [])
                 
                 if matches:
+                    # Stats basiques (compatible avec l'ancien code)
                     h_wins, a_wins, draws = self._calculate_h2h_stats(
                         matches, match.home_team_id, match.away_team_id
                     )
                     h2h_stats = (h_wins, a_wins, draws)
+                    
+                    # Stats détaillées pour Grand Frère
+                    h2h_detailed = self._calculate_detailed_h2h_stats(
+                        matches, match.home_team_id, match.away_team_id
+                    )
+                    
                     total = h_wins + a_wins + draws
                     
                     if total > 0:
@@ -603,11 +797,31 @@ class PredictionService:
         
         papa_tip = self._generate_bet_tip(papa_home_score, papa_away_score, papa_confidence)
         
-        # === LOGIQUE GRAND FRÈRE (H2H + Loi Domicile) ===
-        # Basé sur: Confrontations directes, avantage domicile
+        # === LOGIQUE GRAND FRÈRE (H2H + Loi Domicile + Analyse combinée Papa) ===
+        # Basé sur: Confrontations directes, avantage domicile, niveau de ligue
         home_adv = self._calculate_home_advantage(home_strength, away_strength, home_strength > away_strength)
         gf_home_strength = home_h2h + home_adv
         gf_away_strength = away_h2h
+        
+        # Récupérer les niveaux de ligue pour l'analyse combinée
+        # (On utilise le même niveau pour les deux si même championnat)
+        gf_home_league = league_level
+        gf_away_league = league_level
+        
+        # Générer le verdict Grand Frère basé sur l'analyse combinée
+        gf_verdict = self._generate_gf_verdict(
+            home_strength=home_strength,
+            away_strength=away_strength,
+            home_form=home_form,
+            away_form=away_form,
+            home_h2h=home_h2h,
+            away_h2h=away_h2h,
+            home_league_level=gf_home_league,
+            away_league_level=gf_away_league,
+            h2h_detailed=h2h_detailed,
+            home_team=match.home_team,
+            away_team=match.away_team
+        )
         
         gf_home_score, gf_away_score = self._predict_score(
             gf_home_strength, gf_away_strength,
@@ -701,8 +915,19 @@ class PredictionService:
             h2h_home_wins=h2h_stats[0] if h2h_stats else 0,
             h2h_away_wins=h2h_stats[1] if h2h_stats else 0,
             h2h_draws=h2h_stats[2] if h2h_stats else 0,
+            h2h_matches_count=h2h_detailed.get("matches_counted", 0) if h2h_detailed else 0,
+            h2h_home_goals_total=h2h_detailed.get("home_goals_total", 0) if h2h_detailed else 0,
+            h2h_away_goals_total=h2h_detailed.get("away_goals_total", 0) if h2h_detailed else 0,
+            h2h_home_goals_freq=h2h_detailed.get("home_goals_freq", 0) if h2h_detailed else 0,
+            h2h_away_goals_freq=h2h_detailed.get("away_goals_freq", 0) if h2h_detailed else 0,
+            h2h_top_scorer=h2h_detailed.get("top_scorer", "equal") if h2h_detailed else "equal",
             home_form_score=round(home_form, 2) if home_form else 0.5,
-            away_form_score=round(away_form, 2) if away_form else 0.5
+            away_form_score=round(away_form, 2) if away_form else 0.5,
+            # Grand Frère : Analyse combinée
+            gf_home_league_level=round(gf_home_league, 2) if gf_home_league else 0.5,
+            gf_away_league_level=round(gf_away_league, 2) if gf_away_league else 0.5,
+            gf_home_advantage_bonus=round(home_adv, 3) if home_adv else 0.1,
+            gf_verdict=gf_verdict
         )
         
         self.db.add(prediction)
