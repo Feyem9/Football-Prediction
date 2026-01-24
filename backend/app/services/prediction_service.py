@@ -11,6 +11,7 @@ from sqlalchemy.orm import Session
 from models.match import Match
 from models.prediction import ExpertPrediction
 from services.football_api import football_data_service
+from services.api_football import api_football_service
 
 
 class PredictionService:
@@ -703,38 +704,71 @@ class PredictionService:
             away_goals_avg = 1.2
         
         # Récupérer H2H avec stats détaillées pour Grand Frère
+        # Priorité: API-Football (historique complet) > Football-Data.org (fallback)
         h2h_stats = None
         h2h_detailed = None
         home_h2h = 0.5
         away_h2h = 0.5
         
-        if match.external_id and match.home_team_id and match.away_team_id:
+        # Essayer d'abord API-Football (historique complet jusqu'à 20+ ans)
+        if match.home_team and match.away_team:
             try:
-                # On récupère plus de matchs (limit=10) pour avoir un bon échantillon
+                api_football_h2h = await api_football_service.get_h2h_by_names(
+                    match.home_team, match.away_team, limit=20
+                )
+                
+                if api_football_h2h.get("success") and api_football_h2h.get("stats", {}).get("total_matches", 0) > 0:
+                    stats = api_football_h2h["stats"]
+                    h_wins = stats.get("home_wins", 0)
+                    a_wins = stats.get("away_wins", 0)
+                    draws = stats.get("draws", 0)
+                    
+                    h2h_stats = (h_wins, a_wins, draws)
+                    h2h_detailed = {
+                        "home_wins": h_wins,
+                        "away_wins": a_wins,
+                        "draws": draws,
+                        "matches_counted": stats.get("total_matches", 0),
+                        "home_goals_total": stats.get("home_goals_total", 0),
+                        "away_goals_total": stats.get("away_goals_total", 0),
+                        "home_goals_freq": stats.get("home_goals_freq", 0),
+                        "away_goals_freq": stats.get("away_goals_freq", 0),
+                        "top_scorer": stats.get("top_scorer", "equal")
+                    }
+                    
+                    total = h_wins + a_wins + draws
+                    if total > 0:
+                        home_h2h = (h_wins * 3 + draws * 1) / (total * 3)
+                        away_h2h = (a_wins * 3 + draws * 1) / (total * 3)
+                    
+                    print(f"✅ H2H API-Football: {match.home_team} vs {match.away_team} = {h_wins}-{draws}-{a_wins}")
+            except Exception as e:
+                print(f"⚠️ API-Football H2H error: {e}")
+        
+        # Fallback: Football-Data.org (si API-Football n'a rien retourné)
+        if h2h_stats is None and match.external_id and match.home_team_id and match.away_team_id:
+            try:
                 h2h_data = await football_data_service.get_match_h2h(match.external_id, limit=10)
                 matches = h2h_data.get("matches", [])
                 
                 if matches:
-                    # Stats basiques (compatible avec l'ancien code)
                     h_wins, a_wins, draws = self._calculate_h2h_stats(
                         matches, match.home_team_id, match.away_team_id
                     )
                     h2h_stats = (h_wins, a_wins, draws)
                     
-                    # Stats détaillées pour Grand Frère
                     h2h_detailed = self._calculate_detailed_h2h_stats(
                         matches, match.home_team_id, match.away_team_id
                     )
                     
                     total = h_wins + a_wins + draws
-                    
                     if total > 0:
-                        # Score entre 0 et 1 (Victoire = 1, Nul = 0.33)
-                        # On donne moins de points au nul pour le winner
                         home_h2h = (h_wins * 3 + draws * 1) / (total * 3)
                         away_h2h = (a_wins * 3 + draws * 1) / (total * 3)
-            except Exception:
-                pass
+                    
+                    print(f"✅ H2H Football-Data: {match.home_team} vs {match.away_team} = {h_wins}-{draws}-{a_wins}")
+            except Exception as e:
+                print(f"⚠️ Football-Data H2H error: {e}")
 
         # === LOGIQUE DE PAPA (Classement + Niveau Championnat) ===
         # Basé sur: Position au classement, moyenne de buts, niveau du championnat
