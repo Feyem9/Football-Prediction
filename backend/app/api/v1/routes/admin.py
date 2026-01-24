@@ -187,3 +187,50 @@ async def regenerate_predictions(
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Erreur de régénération: {str(e)}")
+
+
+@router.post("/regenerate-match/{match_id}")
+async def regenerate_match_prediction(
+    match_id: int,
+    db: Session = Depends(get_db),
+):
+    """
+    Régénère la prédiction pour un match spécifique.
+    
+    Args:
+        match_id: ID du match à régénérer
+    
+    Returns:
+        Résultat de la régénération
+    """
+    from models.match import Match
+    from models.prediction import ExpertPrediction
+    from services.prediction_service import PredictionService
+    
+    try:
+        # Récupérer le match
+        match = db.query(Match).filter(Match.id == match_id).first()
+        
+        if not match:
+            raise HTTPException(status_code=404, detail=f"Match {match_id} non trouvé")
+        
+        # Supprimer l'ancienne prédiction si elle existe
+        deleted = db.query(ExpertPrediction).filter(
+            ExpertPrediction.match_id == match_id
+        ).delete(synchronize_session=False)
+        db.commit()
+        
+        # Régénérer la prédiction
+        pred_service = PredictionService(db)
+        await pred_service.generate_prediction(match)
+        
+        return {
+            "success": True,
+            "message": f"Prédiction régénérée pour {match.home_team} vs {match.away_team}",
+            "match_id": match_id,
+            "predictions_deleted": deleted
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Erreur: {str(e)}")
