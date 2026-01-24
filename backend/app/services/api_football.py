@@ -9,19 +9,19 @@ from datetime import datetime
 
 class APIFootballService:
     """
-    Service pour interagir avec API-Football via RapidAPI.
+    Service pour interagir avec API-Football via API-Sports direct.
     
     Cette API est utilisée pour les données H2H car elle a un historique
     beaucoup plus complet que Football-Data.org (jusqu'à 20+ ans).
     """
     
-    BASE_URL = "https://api-football-v1.p.rapidapi.com/v3"
+    BASE_URL = "https://v3.football.api-sports.io"
     
     def __init__(self):
-        self.api_key = os.getenv("RAPIDAPI_KEY")
+        self.api_key = os.getenv("APISPORTS_KEY")
         self.headers = {
-            "X-RapidAPI-Key": self.api_key or "",
-            "X-RapidAPI-Host": "api-football-v1.p.rapidapi.com"
+            "x-apisports-key": self.api_key or "",
+            "Accept": "application/json"
         }
         # Cache pour éviter les requêtes répétées
         self._team_id_cache: Dict[str, int] = {}
@@ -29,7 +29,7 @@ class APIFootballService:
     async def _make_request(self, endpoint: str, params: dict = None) -> dict:
         """Effectue une requête à l'API."""
         if not self.api_key:
-            return {"response": [], "errors": ["RAPIDAPI_KEY not configured"]}
+            return {"response": [], "errors": ["APISPORTS_KEY not configured"]}
         
         async with httpx.AsyncClient(timeout=30.0) as client:
             try:
@@ -90,9 +90,11 @@ class APIFootballService:
         Returns:
             Dict avec les matchs H2H
         """
+        # Note: Le plan gratuit ne supporte pas le paramètre 'last'
+        # L'API retourne tous les matchs H2H disponibles
         data = await self._make_request(
             "/fixtures/headtohead",
-            {"h2h": f"{team1_id}-{team2_id}", "last": limit}
+            {"h2h": f"{team1_id}-{team2_id}"}
         )
         
         return data
