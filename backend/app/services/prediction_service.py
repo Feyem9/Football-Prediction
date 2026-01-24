@@ -909,10 +909,11 @@ class PredictionService:
         
         # Sérialiser les données des matchs importants en JSON
         import json
-        home_upcoming_json = json.dumps(home_upcoming) if home_upcoming else None
-        home_recent_json = json.dumps(home_recent) if home_recent else None
-        away_upcoming_json = json.dumps(away_upcoming) if away_upcoming else None
-        away_recent_json = json.dumps(away_recent) if away_recent else None
+        # Utiliser default=str pour convertir les datetime en string
+        home_upcoming_json = json.dumps(home_upcoming, default=str) if home_upcoming else None
+        home_recent_json = json.dumps(home_recent, default=str) if home_recent else None
+        away_upcoming_json = json.dumps(away_upcoming, default=str) if away_upcoming else None
+        away_recent_json = json.dumps(away_recent, default=str) if away_recent else None
         
         # Créer la prédiction avec les 3 logiques
         prediction = ExpertPrediction(
