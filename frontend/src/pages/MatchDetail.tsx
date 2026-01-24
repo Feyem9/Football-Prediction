@@ -485,6 +485,103 @@ export default function MatchDetail() {
                   "{prediction.grand_frere_tip ? `Grand Frère dit : ${prediction.grand_frere_tip}` : 'Pas de conseil Grand Frère'}"
                 </p>
 
+                {/* CALCUL DÉTAILLÉ - Comment Grand Frère a obtenu ce résultat */}
+                {(prediction.h2h_home_wins !== undefined || prediction.h2h_matches_count) && (
+                  <div className="bg-slate-900/50 border border-blue-500/30 rounded-lg p-3 mb-4 mt-4">
+                    <p className="text-xs text-blue-300 font-bold mb-3 flex items-center gap-2">
+                      🧮 CALCUL GRAND FRÈRE - Étape par étape :
+                    </p>
+                    
+                    <div className="space-y-3 text-xs">
+                      {/* Étape 1 : Force H2H */}
+                      <div className="bg-slate-800/50 rounded p-2">
+                        <p className="text-blue-400 font-semibold mb-1">1️⃣ Score H2H basé sur les confrontations :</p>
+                        <div className="text-slate-300 space-y-1 pl-3">
+                          <p>
+                            • {match.home_team} : {prediction.h2h_home_wins || 0} victoires × 3 + {prediction.h2h_draws || 0} nuls × 1 
+                            = <strong className="text-white">
+                              {((prediction.h2h_home_wins || 0) * 3 + (prediction.h2h_draws || 0) * 1)} pts
+                            </strong>
+                          </p>
+                          <p>
+                            • {match.away_team} : {prediction.h2h_away_wins || 0} victoires × 3 + {prediction.h2h_draws || 0} nuls × 1 
+                            = <strong className="text-white">
+                              {((prediction.h2h_away_wins || 0) * 3 + (prediction.h2h_draws || 0) * 1)} pts
+                            </strong>
+                          </p>
+                          <p className="text-slate-400 italic text-[10px]">
+                            (Victoire = 3 pts, Nul = 1 pt pour les deux)
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* Étape 2 : Score H2H normalisé */}
+                      <div className="bg-slate-800/50 rounded p-2">
+                        <p className="text-blue-400 font-semibold mb-1">2️⃣ Force H2H normalisée (0 à 1) :</p>
+                        <div className="text-slate-300 space-y-1 pl-3">
+                          {(() => {
+                            const totalMatches = (prediction.h2h_home_wins || 0) + (prediction.h2h_away_wins || 0) + (prediction.h2h_draws || 0);
+                            const homeScore = ((prediction.h2h_home_wins || 0) * 3 + (prediction.h2h_draws || 0) * 1) / (totalMatches * 3 || 1);
+                            const awayScore = ((prediction.h2h_away_wins || 0) * 3 + (prediction.h2h_draws || 0) * 1) / (totalMatches * 3 || 1);
+                            return (
+                              <>
+                                <p>
+                                  • {match.home_team} : Force H2H = <strong className="text-green-400">{homeScore.toFixed(2)}</strong> ({(homeScore * 100).toFixed(0)}%)
+                                </p>
+                                <p>
+                                  • {match.away_team} : Force H2H = <strong className="text-blue-400">{awayScore.toFixed(2)}</strong> ({(awayScore * 100).toFixed(0)}%)
+                                </p>
+                              </>
+                            );
+                          })()}
+                        </div>
+                      </div>
+
+                      {/* Étape 3 : Bonus domicile */}
+                      <div className="bg-slate-800/50 rounded p-2">
+                        <p className="text-blue-400 font-semibold mb-1">3️⃣ Ajout du bonus domicile :</p>
+                        <div className="text-slate-300 space-y-1 pl-3">
+                          <p>
+                            • Bonus domicile = <strong className="text-green-400">+{Math.round((prediction.gf_home_advantage_bonus || 0.1) * 100)}%</strong>
+                          </p>
+                          <p>
+                            • Force finale {match.home_team} = Force H2H + Bonus = 
+                            <strong className="text-green-400 ml-1">
+                              {(() => {
+                                const totalMatches = (prediction.h2h_home_wins || 0) + (prediction.h2h_away_wins || 0) + (prediction.h2h_draws || 0);
+                                const homeScore = ((prediction.h2h_home_wins || 0) * 3 + (prediction.h2h_draws || 0) * 1) / (totalMatches * 3 || 1);
+                                return (homeScore + (prediction.gf_home_advantage_bonus || 0.1)).toFixed(2);
+                              })()}
+                            </strong>
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* Étape 4 : Prédiction finale */}
+                      <div className="bg-slate-800/50 rounded p-2">
+                        <p className="text-blue-400 font-semibold mb-1">4️⃣ Prédiction finale :</p>
+                        <div className="text-slate-300 space-y-1 pl-3">
+                          <p>
+                            • Score basé sur la force × moyenne de buts de chaque équipe
+                          </p>
+                          <p className="text-blue-300 font-bold mt-2">
+                            → Résultat Grand Frère : {prediction.grand_frere_home_score} - {prediction.grand_frere_away_score}
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* Note explicative */}
+                      <div className="border-t border-slate-700 pt-2">
+                        <p className="text-slate-400 italic text-[10px] leading-relaxed">
+                          💡 <strong>Note :</strong> Grand Frère utilise l'historique des confrontations directes (H2H) 
+                          et ajoute un bonus domicile. Celui qui gagne souvent les H2H a l'ascendant psychologique. 
+                          Le bonus domicile est ajusté selon l'écart de force entre les équipes.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
                 {/* PREUVES Grand Frère */}
                 <div className="border-t border-blue-500/20 pt-4 mt-4">
                   <p className="text-xs text-blue-400 uppercase tracking-wide mb-3 flex items-center gap-2 font-bold">
