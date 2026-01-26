@@ -7,6 +7,29 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import type { Match } from '../types';
 
+// Types pour l'API /history
+interface HistoryMatchRaw {
+  id: number;
+  competition_code: string;
+  competition_name: string;
+  home_team: string;
+  home_team_short: string;
+  home_team_crest: string;
+  away_team: string;
+  away_team_short: string;
+  away_team_crest: string;
+  match_date: string;
+  actual: { home: number; away: number; winner: string } | null;
+  prediction: { home: number; away: number; confidence: number; tip: string; winner: string } | null;
+  success: { winner: boolean; score: boolean; goals: boolean } | null;
+}
+
+interface MatchSuccess {
+  winner: boolean;
+  score: boolean;
+  goals: boolean;
+}
+
 const API_BASE = import.meta.env.VITE_API_URL || 'https://football-prediction-mbil.onrender.com/api/v1';
 
 const COMP_FLAGS: Record<string, string> = {
@@ -65,7 +88,7 @@ export default function History() {
         console.log('📊 Historique reçu:', data);
         
         // Transformer les données du nouvel endpoint
-        const formattedMatches: Match[] = data.matches.map((m: any) => ({
+        const formattedMatches: (Match & { _success?: MatchSuccess | null })[] = data.matches.map((m: HistoryMatchRaw) => ({
           id: m.id,
           competition_code: m.competition_code,
           competition_name: m.competition_name,
@@ -271,7 +294,7 @@ export default function History() {
 /**
  * Carte de résultat de match avec design premium
  */
-function MatchResultCard({ match }: { match: Match & { _success?: any } }) {
+function MatchResultCard({ match }: { match: Match & { _success?: MatchSuccess | null } }) {
   const prediction = match.prediction;
   const actualHome = match.score_home ?? 0;
   const actualAway = match.score_away ?? 0;
