@@ -88,6 +88,23 @@ async def get_today_matches(db: Session = Depends(get_db)):
     return matches_controller.get_today_matches(db)
 
 
+@router.get("/history")
+async def get_historical_matches(
+    date: Optional[str] = Query(None, description="Date format YYYY-MM-DD (défaut: hier)"),
+    competition: Optional[str] = Query(None, description="Code compétition (PL, FL1...)"),
+    db: Session = Depends(get_db)
+):
+    """
+    Récupère l'historique des matchs terminés avec prédictions vs résultats réels.
+    
+    Retourne:
+    - Les matchs terminés du jour demandé
+    - Comparaison prédiction / résultat réel
+    - Statistiques de réussite
+    """
+    return matches_controller.get_historical_matches(db, date, competition)
+
+
 @router.get("/{match_id}", response_model=MatchResponse)
 async def get_match(match_id: int, db: Session = Depends(get_db)):
     """Récupère les détails d'un match spécifique."""

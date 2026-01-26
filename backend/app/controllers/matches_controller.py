@@ -204,6 +204,167 @@ def get_today_matches(db: Session) -> MatchListResponse:
     return MatchListResponse(count=len(match_responses), matches=match_responses)
 
 
+def get_historical_matches(db: Session, date: Optional[str] = None, competition: Optional[str] = None):
+    """
+    Récupère l'historique des matchs terminés avec comparaison prédiction vs résultat.
+    
+    Args:
+        db: Session de base de données
+        date: Date au format YYYY-MM-DD (défaut: hier)
+        competition: Code de la compétition (optionnel)
+    
+    Returns:
+        Matchs terminés avec prédictions et statistiques de réussite
+    """
+    from models.standing import Standing
+    
+    # Date par défaut = hier
+    if date:
+        try:
+            target_date = datetime.strptime(date, "%Y-%m-%d").date()
+        except ValueError:
+            raise HTTPException(status_code=400, detail="Format de date invalide. Utilisez YYYY-MM-DD")
+    else:
+        target_date = (datetime.now(timezone.utc) - timedelta(days=1)).date()
+    
+    # Récupérer les matchs terminés du jour
+    query = db.query(Match).options(joinedload(Match.expert_prediction)).filter(
+        Match.status == "FINISHED"
+    )
+    
+    # Filtrer par date
+    start_of_day = datetime.combine(target_date, datetime.min.time())
+    end_of_day = datetime.combine(target_date, datetime.max.time())
+    query = query.filter(Match.match_date >= start_of_day, Match.match_date <= end_of_day)
+    
+    # Filtrer par compétition si spécifié
+    if competition:
+        query = query.filter(Match.competition_code == competition)
+    
+    matches = query.order_by(Match.match_date).all()
+    
+    # Construire la réponse avec comparaison prédiction/résultat
+    results = []
+    stats = {
+        "total": 0,
+        "correct_winner": 0,
+        "correct_score": 0,
+        "correct_goals": 0,
+        "by_competition": {}
+    }
+    
+    for match in matches:
+        pred = match.expert_prediction
+        actual_home = match.score_home
+        actual_away = match.score_away
+        
+        # Résultat réel
+        if actual_home is not None and actual_away is not None:
+            if actual_home > actual_away:
+                actual_winner = "home"
+            elif actual_away > actual_home:
+                actual_winner = "away"
+            else:
+                actual_winner = "draw"
+            actual_goals = actual_home + actual_away
+        else:
+            actual_winner = None
+            actual_goals = None
+        
+        # Prédiction
+        pred_winner = None
+        pred_goals = None
+        winner_correct = False
+        score_correct = False
+        goals_correct = False
+        
+        if pred:
+            h = pred.home_score_forecast or 0
+            a = pred.away_score_forecast or 0
+            if h > a:
+                pred_winner = "home"
+            elif a > h:
+                pred_winner = "away"
+            else:
+                pred_winner = "draw"
+            pred_goals = h + a
+            
+            # Vérifier la réussite
+            if actual_winner:
+                winner_correct = pred_winner == actual_winner
+                score_correct = (h == actual_home and a == actual_away)
+                goals_correct = (pred_goals > 2.5) == (actual_goals > 2.5) if actual_goals is not None else False
+                
+                stats["total"] += 1
+                if winner_correct:
+                    stats["correct_winner"] += 1
+                if score_correct:
+                    stats["correct_score"] += 1
+                if goals_correct:
+                    stats["correct_goals"] += 1
+                
+                # Stats par compétition
+                comp = match.competition_code
+                if comp not in stats["by_competition"]:
+                    stats["by_competition"][comp] = {"total": 0, "correct": 0, "name": match.competition_name}
+                stats["by_competition"][comp]["total"] += 1
+                if winner_correct:
+                    stats["by_competition"][comp]["correct"] += 1
+        
+        results.append({
+            "id": match.id,
+            "competition_code": match.competition_code,
+            "competition_name": match.competition_name,
+            "home_team": match.home_team,
+            "home_team_short": match.home_team_short,
+            "home_team_crest": match.home_team_crest,
+            "away_team": match.away_team,
+            "away_team_short": match.away_team_short,
+            "away_team_crest": match.away_team_crest,
+            "match_date": match.match_date.isoformat() if match.match_date else None,
+            "actual": {
+                "home": actual_home,
+                "away": actual_away,
+                "winner": actual_winner
+            },
+            "prediction": {
+                "home": pred.home_score_forecast if pred else None,
+                "away": pred.away_score_forecast if pred else None,
+                "confidence": pred.confidence if pred else None,
+                "tip": pred.bet_tip if pred else None,
+                "winner": pred_winner
+            } if pred else None,
+            "success": {
+                "winner": winner_correct,
+                "score": score_correct,
+                "goals": goals_correct
+            } if pred and actual_winner else None
+        })
+    
+    # Calculer les pourcentages
+    success_rates = {}
+    if stats["total"] > 0:
+        success_rates = {
+            "winner": round(stats["correct_winner"] / stats["total"] * 100, 1),
+            "score": round(stats["correct_score"] / stats["total"] * 100, 1),
+            "goals": round(stats["correct_goals"] / stats["total"] * 100, 1)
+        }
+    
+    return {
+        "date": target_date.isoformat(),
+        "count": len(results),
+        "matches": results,
+        "stats": {
+            "total": stats["total"],
+            "correct_winner": stats["correct_winner"],
+            "correct_score": stats["correct_score"],
+            "correct_goals": stats["correct_goals"],
+            "success_rates": success_rates,
+            "by_competition": stats["by_competition"]
+        }
+    }
+
+
 def get_match_by_id(db: Session, match_id: int) -> MatchResponse:
     """Récupère un match par son ID."""
     # Optimisation: joinedload
