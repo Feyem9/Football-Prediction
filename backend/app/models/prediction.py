@@ -45,6 +45,7 @@ class ExpertPrediction(Base):
     ma_logique_away_score = Column(Integer, nullable=True)
     ma_logique_confidence = Column(Float, nullable=True)
     ma_logique_tip = Column(String, nullable=True)
+    ma_logique_analysis = Column(String, nullable=True)  # Nouveau: Scores détaillés APEX-30 (JSON)
     
     # === Matchs importants (données contextuelles pour Papa) ===
     # Format JSON: {"competition": "...", "opponent": "...", "date": "...", "days_until": N}

@@ -51,6 +51,7 @@ export interface PredictionSummary {
   ma_logique_away_score?: number;
   ma_logique_confidence?: number;
   ma_logique_tip?: string;
+  ma_logique_analysis?: string;
   
   // Matchs importants (contexte Papa)
   home_upcoming_important?: string;

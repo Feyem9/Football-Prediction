@@ -21,6 +21,15 @@ export default function MatchDetail() {
     }
   };
 
+  const parseApexAnalysis = (jsonStr?: string) => {
+    if (!jsonStr) return null;
+    try {
+      return JSON.parse(jsonStr);
+    } catch {
+      return null;
+    }
+  };
+
   useEffect(() => {
     async function fetchData() {
       if (!id) return;
@@ -704,71 +713,88 @@ export default function MatchDetail() {
                   "{prediction.ma_logique_tip ? `Ma Logique suggère : ${prediction.ma_logique_tip}` : 'Pas de conseil Ma Logique'}"
                 </p>
 
-                {/* PREUVES Ma Logique */}
-                <div className="border-t border-purple-500/20 pt-4 mt-4">
-                  <p className="text-xs text-purple-400 uppercase tracking-wide mb-3 flex items-center gap-2 font-bold">
-                    <span>🟣</span> PREUVES - FORME RÉCENTE
+                {/* PREUVES Ma Logique - APEX-30 8 MODULES */}
+                <div className="border-t border-purple-500/20 pt-4 mt-4 text-xs">
+                  <p className="text-purple-400 uppercase tracking-wide mb-3 flex items-center gap-2 font-bold">
+                    <span>🧠</span> SYSTÈME APEX-30 - ANALYSE 8 MODULES
                   </p>
                   
-                  <div className="space-y-3 text-xs">
-                    {/* Form Scores */}
-                    <div className="bg-slate-800/50 rounded-lg p-3">
-                      <p className="text-purple-400 font-bold mb-3">📈 Score de forme (derniers matchs) :</p>
-                      
-                      <div className="space-y-4">
-                        <div>
-                          <div className="flex justify-between text-[10px] mb-1">
-                            <span className="text-slate-400">{match.home_team}</span>
-                            <span className="text-purple-300 font-bold">{Math.round((prediction.home_form_score || 0.5) * 100)}%</span>
-                          </div>
-                          <div className="h-2 bg-slate-700 rounded-full overflow-hidden">
-                            <div 
-                              className="h-full bg-gradient-to-r from-purple-500 to-pink-500 transition-all duration-1000"
-                              style={{ width: `${(prediction.home_form_score || 0.5) * 100}%` }}
-                            ></div>
-                          </div>
-                        </div>
+                  {(() => {
+                    const apex = parseApexAnalysis(prediction.ma_logique_analysis);
+                    if (!apex) return (
+                      <div className="bg-slate-800/50 rounded-lg p-3 italic text-slate-400">
+                        Analyse détaillée non disponible pour ce match.
+                      </div>
+                    );
 
-                        <div>
-                          <div className="flex justify-between text-[10px] mb-1">
-                            <span className="text-slate-400">{match.away_team}</span>
-                            <span className="text-purple-300 font-bold">{Math.round((prediction.away_form_score || 0.5) * 100)}%</span>
-                          </div>
-                          <div className="h-2 bg-slate-700 rounded-full overflow-hidden">
-                            <div 
-                              className="h-full bg-gradient-to-r from-purple-500 to-pink-500 transition-all duration-1000"
-                              style={{ width: `${(prediction.away_form_score || 0.5) * 100}%` }}
-                            ></div>
-                          </div>
+                    const modules = [
+                      { key: 'ifp', label: 'Forme (IFP)', weight: 25, color: 'from-purple-500 to-indigo-500' },
+                      { key: 'force_offensive', label: 'Force Offensive', weight: 15, color: 'from-orange-500 to-red-500' },
+                      { key: 'solidite_defensive', label: 'Défense', weight: 15, color: 'from-blue-500 to-cyan-500' },
+                      { key: 'facteur_domicile', label: 'Loi Domicile', weight: 10, color: 'from-emerald-500 to-green-500' },
+                      { key: 'motivation', label: 'Enjeu/Motivation', weight: 15, color: 'from-yellow-500 to-orange-500' },
+                      { key: 'h2h', label: 'Historique H2H', weight: 10, color: 'from-pink-500 to-rose-500' },
+                      { key: 'fatigue', label: 'Fatigue Physique', weight: 5, color: 'from-slate-500 to-slate-400' },
+                      { key: 'absences', label: 'Impact Absences', weight: 5, color: 'from-red-600 to-red-400' },
+                    ];
+
+                    return (
+                      <div className="grid grid-cols-1 gap-3">
+                        {modules.map((mod) => {
+                          const valH = apex.equipe_home[mod.key] || 0;
+                          const valA = apex.equipe_away[mod.key] || 0;
+                          
+                          // Normalisation pour affichage (IFP ~ 3 max, FO ~ 5 max, Motivation ~ 3 max etc)
+                          const maxVal = mod.key === 'solidite_defensive' ? 10 : (mod.key === 'force_offensive' ? 4 : 3);
+                          const pctH = Math.min(100, (valH / maxVal) * 100);
+                          const pctA = Math.min(100, (valA / maxVal) * 100);
+
+                          return (
+                            <div key={mod.key} className="bg-slate-800/50 rounded-lg p-2 border border-slate-700/30">
+                              <div className="flex justify-between items-center mb-1">
+                                <span className="font-bold text-slate-300">{mod.label}</span>
+                                <span className="text-[10px] text-slate-500">Poids : {mod.weight}%</span>
+                              </div>
+                              
+                              <div className="space-y-1.5">
+                                {/* Home Bar */}
+                                <div className="flex items-center gap-2">
+                                  <div className="w-16 truncate text-[9px] text-slate-400 text-right">{match.home_team_short || match.home_team}</div>
+                                  <div className="flex-1 h-1.5 bg-slate-700 rounded-full overflow-hidden">
+                                    <div 
+                                      className={`h-full bg-gradient-to-r ${mod.color} transition-all duration-1000`}
+                                      style={{ width: `${pctH}%` }}
+                                    ></div>
+                                  </div>
+                                  <div className="w-8 text-[9px] font-bold text-white text-right">{valH.toFixed(1)}</div>
+                                </div>
+                                
+                                {/* Away Bar */}
+                                <div className="flex items-center gap-2">
+                                  <div className="w-16 truncate text-[9px] text-slate-400 text-right">{match.away_team_short || match.away_team}</div>
+                                  <div className="flex-1 h-1.5 bg-slate-700 rounded-full overflow-hidden">
+                                    <div 
+                                      className={`h-full bg-gradient-to-r ${mod.color} opacity-60 transition-all duration-1000`}
+                                      style={{ width: `${pctA}%` }}
+                                    ></div>
+                                  </div>
+                                  <div className="w-8 text-[9px] font-bold text-slate-400 text-right">{valA.toFixed(1)}</div>
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })}
+
+                        <div className="bg-purple-900/20 border border-purple-500/30 rounded-lg p-3 mt-2">
+                          <p className="text-purple-300 font-bold mb-1">💡 Ma Logique APEX-30 :</p>
+                          <p className="text-[10px] text-slate-400 leading-relaxed italic">
+                            APEX-30 combine ces 8 modules scientifiques pour détecter les opportunités. 
+                            Plus l'écart de score total est grand entre les deux équipes, plus la confiance est élevée.
+                          </p>
                         </div>
                       </div>
-
-                      <p className="text-[10px] text-slate-400 italic mt-3 leading-relaxed">
-                        💡 Ma Logique calcule ce score en regardant les résultats des 10 derniers matchs. 
-                        Une victoire rapporte plus de points qu'un nul. Une série de victoires augmente drastiquement 
-                        la "chaleur" de l'équipe.
-                      </p>
-                    </div>
-
-                    {/* Consensus info */}
-                    <div className="bg-slate-800/50 rounded-lg p-3">
-                      <p className="text-purple-400 font-bold mb-2">🤝 Double Validation :</p>
-                      <p className="text-[10px] text-slate-300">
-                        Ma Logique agit comme un arbitre. Elle regarde ce que Papa et Grand Frère disent. 
-                        Si les deux sont d'accord, elle booste la confiance. Si ils divergent, elle tempère.
-                      </p>
-                    </div>
-
-                    {/* Résumé Ma Logique */}
-                    <div className="bg-purple-900/30 border border-purple-500/50 rounded-lg p-3">
-                      <p className="text-purple-300 font-bold mb-2">✅ EN RÉSUMÉ - Ma Logique :</p>
-                      <ul className="space-y-1 text-xs text-slate-300">
-                        <li>• Équipe "chaude" = Dynamique positive</li>
-                        <li>• Validation croisée = Sécurité accrue</li>
-                        <li>• Forme &gt; Classement = Surprise possible</li>
-                      </ul>
-                    </div>
-                  </div>
+                    );
+                  })()}
                 </div>
               </div>
             </div>

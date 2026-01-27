@@ -1071,6 +1071,13 @@ class PredictionService:
             ml_confidence = decision['confiance_pct']
             ml_tip = decision['pronostic']
             
+            # Sauvegarder les scores détaillés pour le frontend
+            import json
+            ml_analysis = json.dumps({
+                'equipe_home': apex_result['equipe_a']['scores'],
+                'equipe_away': apex_result['equipe_b']['scores']
+            })
+            
             print(f"APEX-30: {match.home_team} vs {match.away_team} -> {ml_home_score}-{ml_away_score} ({ml_confidence:.0%})")
             
         except Exception as e:
@@ -1084,6 +1091,7 @@ class PredictionService:
             )
             ml_confidence = min(0.7, 0.3 + abs(home_form - away_form))
             ml_tip = self._generate_bet_tip(ml_home_score, ml_away_score, ml_confidence)
+            ml_analysis = None
         
         # === CONSENSUS FINAL ===
         # Moyenne des 3 logiques, pondérée par la confiance
@@ -1150,6 +1158,7 @@ class PredictionService:
             ma_logique_away_score=ml_away_score,
             ma_logique_confidence=round(ml_confidence, 2),
             ma_logique_tip=ml_tip,
+            ma_logique_analysis=ml_analysis,
             # Matchs importants (contexte Papa)
             home_upcoming_important=home_upcoming_json,
             home_recent_important=home_recent_json,
