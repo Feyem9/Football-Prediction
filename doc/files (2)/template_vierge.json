@@ -1,0 +1,100 @@
+{
+  "match": {
+    "date": "YYYY-MM-DD",
+    "competition": "Nom de la compétition",
+    "journee": 0,
+    "commentaire": "Informations supplémentaires sur le match"
+  },
+  "equipe_a": {
+    "nom": "Nom Équipe Domicile",
+    "classement_actuel": 0,
+    "points_domicile_saison": 0.0,
+    "points_exterieur_saison": 0.0,
+    "est_domicile": true,
+    "situation": "Titre | Europe | Maintien | Milieu de tableau | Relégué | Champion",
+    "points_du_leader": 0,
+    "serie_actuelle": "Ex: 3V2D1N pour 3 victoires, 2 défaites, 1 nul",
+    "entraineur_nouveau": false,
+    "entraineur_sous_pression": false,
+    "derby": false,
+    "matchs_historique": [
+      {
+        "date": "YYYY-MM-DD",
+        "domicile": true,
+        "resultat": "V | N | D",
+        "buts_pour": 0,
+        "buts_contre": 0,
+        "adversaire_classement": 0,
+        "competition": "Championnat | Coupe nationale | Coupe d'Europe",
+        "xg_pour": 0.0,
+        "xg_contre": 0.0,
+        "possession": 0,
+        "tirs_cadres": 0,
+        "corners_obtenus": 0,
+        "corners_concedes": 0
+      }
+    ],
+    "calendrier_avant": [
+      {
+        "date": "YYYY-MM-DD",
+        "competition": "Championnat | Coupe nationale | Coupe d'Europe",
+        "importance": "Normal | Important | Crucial",
+        "distance_km": 0
+      }
+    ],
+    "calendrier_apres": [
+      {
+        "date": "YYYY-MM-DD",
+        "competition": "Championnat | Coupe nationale | Coupe d'Europe",
+        "importance": "Normal | Important | Crucial",
+        "distance_km": 0
+      }
+    ],
+    "joueurs_absents": [
+      {
+        "nom": "Nom du joueur",
+        "poste": "Gardien | Defenseur | Milieu | Attaquant",
+        "importance": 0,
+        "depuis_combien_temps": 0
+      }
+    ]
+  },
+  "equipe_b": {
+    "nom": "Nom Équipe Extérieur",
+    "classement_actuel": 0,
+    "points_domicile_saison": 0.0,
+    "points_exterieur_saison": 0.0,
+    "est_domicile": false,
+    "situation": "Titre | Europe | Maintien | Milieu de tableau | Relégué | Champion",
+    "points_du_leader": 0,
+    "serie_actuelle": "",
+    "entraineur_nouveau": false,
+    "entraineur_sous_pression": false,
+    "derby": false,
+    "matchs_historique": [],
+    "calendrier_avant": [],
+    "calendrier_apres": [],
+    "joueurs_absents": []
+  },
+  "historique_h2h": {
+    "victoires_equipe_a": 0,
+    "nuls": 0,
+    "victoires_equipe_b": 0,
+    "matchs_serres": 0,
+    "derniers_gagnants": ["A | N | B (5 derniers matchs, du plus récent au plus ancien)"]
+  },
+  "cotes": {
+    "victoire_equipe_a": 0.0,
+    "nul": 0.0,
+    "victoire_equipe_b": 0.0,
+    "cote_initiale_equipe_a": 0.0,
+    "cote_initiale_equipe_b": 0.0
+  },
+  "_notes": {
+    "importance_joueurs": "0-3: Remplaçant, 4-6: Titulaire régulier, 7-8: Joueur important, 9-10: Indispensable",
+    "classement": "Position dans le championnat (1-20)",
+    "points_saison": "Moyenne de points par match (0-3)",
+    "xg": "Expected Goals - si non disponible, laisser à 0.0",
+    "calendrier": "Matchs dans les 7 jours avant/après le match analysé"
+  }
+}

@@ -1,0 +1,143 @@
+{
+  "match": {
+    "date": "2025-01-27",
+    "competition": "Ligue 1",
+    "journee": 20
+  },
+  "equipe_a": {
+    "nom": "Paris SG",
+    "classement_actuel": 1,
+    "points_domicile_saison": 2.5,
+    "points_exterieur_saison": 1.9,
+    "est_domicile": true,
+    "situation": "Titre",
+    "points_du_leader": 0,
+    "serie_actuelle": "3V1N",
+    "entraineur_nouveau": false,
+    "entraineur_sous_pression": false,
+    "derby": false,
+    "matchs_historique": [
+      {
+        "date": "2025-01-20",
+        "domicile": false,
+        "resultat": "V",
+        "buts_pour": 3,
+        "buts_contre": 1,
+        "adversaire_classement": 8,
+        "competition": "Championnat",
+        "xg_pour": 2.8,
+        "xg_contre": 0.9,
+        "possession": 62,
+        "tirs_cadres": 8,
+        "corners_obtenus": 6,
+        "corners_concedes": 3
+      },
+      {
+        "date": "2025-01-15",
+        "domicile": true,
+        "resultat": "V",
+        "buts_pour": 2,
+        "buts_contre": 0,
+        "adversaire_classement": 12,
+        "competition": "Championnat",
+        "xg_pour": 2.2,
+        "xg_contre": 0.5,
+        "possession": 58,
+        "tirs_cadres": 7,
+        "corners_obtenus": 7,
+        "corners_concedes": 2
+      }
+    ],
+    "calendrier_avant": [
+      {
+        "date": "2025-01-23",
+        "competition": "Championnat",
+        "importance": "Normal",
+        "distance_km": 0
+      }
+    ],
+    "calendrier_apres": [
+      {
+        "date": "2025-01-31",
+        "competition": "Coupe d'Europe",
+        "importance": "Important",
+        "distance_km": 800
+      }
+    ],
+    "joueurs_absents": [
+      {
+        "nom": "Mbappé",
+        "poste": "Attaquant",
+        "importance": 9,
+        "depuis_combien_temps": 5
+      }
+    ]
+  },
+  "equipe_b": {
+    "nom": "Olympique Lyonnais",
+    "classement_actuel": 7,
+    "points_domicile_saison": 1.8,
+    "points_exterieur_saison": 1.2,
+    "est_domicile": false,
+    "situation": "Europe",
+    "points_du_leader": -18,
+    "serie_actuelle": "1V1D1N",
+    "entraineur_nouveau": false,
+    "entraineur_sous_pression": true,
+    "derby": false,
+    "matchs_historique": [
+      {
+        "date": "2025-01-21",
+        "domicile": true,
+        "resultat": "V",
+        "buts_pour": 2,
+        "buts_contre": 1,
+        "adversaire_classement": 14,
+        "competition": "Championnat",
+        "xg_pour": 1.9,
+        "xg_contre": 1.2,
+        "possession": 51,
+        "tirs_cadres": 6,
+        "corners_obtenus": 5,
+        "corners_concedes": 4
+      }
+    ],
+    "calendrier_avant": [
+      {
+        "date": "2025-01-24",
+        "competition": "Coupe d'Europe",
+        "importance": "Important",
+        "distance_km": 600
+      }
+    ],
+    "calendrier_apres": [],
+    "joueurs_absents": [
+      {
+        "nom": "Lacazette",
+        "poste": "Attaquant",
+        "importance": 7,
+        "depuis_combien_temps": 2
+      },
+      {
+        "nom": "Tolisso",
+        "poste": "Milieu",
+        "importance": 5,
+        "depuis_combien_temps": 10
+      }
+    ]
+  },
+  "historique_h2h": {
+    "victoires_equipe_a": 3,
+    "nuls": 1,
+    "victoires_equipe_b": 1,
+    "matchs_serres": 3,
+    "derniers_gagnants": ["A", "N", "A", "B", "A"]
+  },
+  "cotes": {
+    "victoire_equipe_a": 1.65,
+    "nul": 3.80,
+    "victoire_equipe_b": 5.50,
+    "cote_initiale_equipe_a": 1.70,
+    "cote_initiale_equipe_b": 5.20
+  }
+}

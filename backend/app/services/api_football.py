@@ -212,7 +212,219 @@ class APIFootballService:
                 "top_scorer": "home" if home_goals > away_goals else ("away" if away_goals > home_goals else "equal")
             }
         }
+    
+    async def get_team_last_matches(self, team_name: str, last: int = 10) -> dict:
+        """
+        Récupère les N derniers matchs d'une équipe.
+        
+        Args:
+            team_name: Nom de l'équipe
+            last: Nombre de matchs à récupérer (défaut: 10)
+            
+        Returns:
+            Liste des matchs avec scores, adversaires, statistiques
+        """
+        team_id = await self.search_team(team_name)
+        if not team_id:
+            return {"success": False, "error": f"Équipe non trouvée: {team_name}", "matches": []}
+        
+        data = await self._make_request("/fixtures", {
+            "team": team_id,
+            "last": last,
+            "status": "FT"  # Matchs terminés uniquement
+        })
+        
+        matches = []
+        for fixture in data.get("response", []):
+            fixture_data = fixture.get("fixture", {})
+            teams = fixture.get("teams", {})
+            goals = fixture.get("goals", {})
+            score = fixture.get("score", {})
+            
+            home_team = teams.get("home", {})
+            away_team = teams.get("away", {})
+            
+            is_home = home_team.get("id") == team_id
+            
+            # Déterminer le résultat
+            home_goals = goals.get("home", 0) or 0
+            away_goals = goals.get("away", 0) or 0
+            
+            if is_home:
+                buts_pour = home_goals
+                buts_contre = away_goals
+                adversaire = away_team.get("name", "Inconnu")
+            else:
+                buts_pour = away_goals
+                buts_contre = home_goals
+                adversaire = home_team.get("name", "Inconnu")
+            
+            if buts_pour > buts_contre:
+                resultat = "V"
+            elif buts_pour < buts_contre:
+                resultat = "D"
+            else:
+                resultat = "N"
+            
+            matches.append({
+                "fixture_id": fixture_data.get("id"),
+                "date": fixture_data.get("date"),
+                "domicile": is_home,
+                "resultat": resultat,
+                "buts_pour": buts_pour,
+                "buts_contre": buts_contre,
+                "adversaire": adversaire,
+                "adversaire_id": away_team.get("id") if is_home else home_team.get("id"),
+                "competition": fixture.get("league", {}).get("name", "Championnat"),
+                "competition_id": fixture.get("league", {}).get("id")
+            })
+        
+        return {
+            "success": True,
+            "team_id": team_id,
+            "team_name": team_name,
+            "matches": matches
+        }
+    
+    async def get_fixture_statistics(self, fixture_id: int) -> dict:
+        """
+        Récupère les statistiques détaillées d'un match.
+        
+        Args:
+            fixture_id: ID du match
+            
+        Returns:
+            Statistiques: tirs, corners, possession, etc.
+        """
+        data = await self._make_request("/fixtures/statistics", {
+            "fixture": fixture_id
+        })
+        
+        stats = {"home": {}, "away": {}}
+        
+        for team_stats in data.get("response", []):
+            team_data = team_stats.get("team", {})
+            statistics = team_stats.get("statistics", [])
+            
+            # Déterminer si c'est home ou away (premier = home, second = away)
+            team_key = "home" if len(stats["home"]) == 0 and data.get("response", []).index(team_stats) == 0 else "away"
+            
+            for stat in statistics:
+                stat_type = stat.get("type", "").lower().replace(" ", "_")
+                stat_value = stat.get("value")
+                
+                # Convertir les pourcentages
+                if isinstance(stat_value, str) and "%" in stat_value:
+                    try:
+                        stat_value = float(stat_value.replace("%", ""))
+                    except:
+                        pass
+                
+                stats[team_key][stat_type] = stat_value
+        
+        return {
+            "success": True,
+            "fixture_id": fixture_id,
+            "statistics": stats
+        }
+    
+    async def get_team_injuries(self, team_name: str) -> dict:
+        """
+        Récupère les joueurs blessés/absents d'une équipe.
+        
+        Args:
+            team_name: Nom de l'équipe
+            
+        Returns:
+            Liste des joueurs blessés avec détails
+        """
+        team_id = await self.search_team(team_name)
+        if not team_id:
+            return {"success": False, "error": f"Équipe non trouvée: {team_name}", "injuries": []}
+        
+        # Récupérer les blessures pour la saison en cours
+        current_season = datetime.now().year
+        if datetime.now().month < 7:  # Avant juillet = saison précédente
+            current_season -= 1
+        
+        data = await self._make_request("/injuries", {
+            "team": team_id,
+            "season": current_season
+        })
+        
+        injuries = []
+        for injury in data.get("response", []):
+            player = injury.get("player", {})
+            injury_data = injury.get("player", {})
+            
+            # Déterminer l'importance du joueur (simplifié)
+            # En production, on utiliserait les stats du joueur
+            importance = 5  # Valeur par défaut
+            
+            injuries.append({
+                "nom": player.get("name", "Inconnu"),
+                "poste": player.get("type", "Joueur"),
+                "raison": injury.get("player", {}).get("reason", "Blessure"),
+                "importance": importance
+            })
+        
+        return {
+            "success": True,
+            "team_id": team_id,
+            "team_name": team_name,
+            "injuries": injuries[:10]  # Limiter à 10
+        }
+    
+    async def get_team_standings_position(self, team_name: str, league_id: int = None) -> dict:
+        """
+        Récupère la position au classement d'une équipe.
+        
+        Args:
+            team_name: Nom de l'équipe
+            league_id: ID de la ligue (optionnel)
+            
+        Returns:
+            Position, points, forme
+        """
+        team_id = await self.search_team(team_name)
+        if not team_id:
+            return {"success": False, "error": f"Équipe non trouvée: {team_name}"}
+        
+        # Récupérer les standings
+        current_season = datetime.now().year
+        if datetime.now().month < 7:
+            current_season -= 1
+        
+        params = {"season": current_season, "team": team_id}
+        if league_id:
+            params["league"] = league_id
+        
+        data = await self._make_request("/standings", params)
+        
+        for league in data.get("response", []):
+            standings = league.get("league", {}).get("standings", [[]])
+            for group in standings:
+                for team in group:
+                    if team.get("team", {}).get("id") == team_id:
+                        return {
+                            "success": True,
+                            "team_id": team_id,
+                            "position": team.get("rank", 10),
+                            "points": team.get("points", 0),
+                            "played": team.get("all", {}).get("played", 0),
+                            "won": team.get("all", {}).get("win", 0),
+                            "drawn": team.get("all", {}).get("draw", 0),
+                            "lost": team.get("all", {}).get("lose", 0),
+                            "goals_for": team.get("all", {}).get("goals", {}).get("for", 0),
+                            "goals_against": team.get("all", {}).get("goals", {}).get("against", 0),
+                            "form": team.get("form", ""),
+                            "home": team.get("home", {}),
+                            "away": team.get("away", {})
+                        }
+        
+        return {"success": False, "error": "Position non trouvée"}
 
 
 # Instance globale
 api_football_service = APIFootballService()
+

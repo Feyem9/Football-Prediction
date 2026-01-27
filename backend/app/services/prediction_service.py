@@ -864,17 +864,119 @@ class PredictionService:
         gf_confidence = min(0.8, 0.4 + abs(home_h2h - away_h2h))
         gf_tip = self._generate_bet_tip(gf_home_score, gf_away_score, gf_confidence)
         
-        # === MA LOGIQUE (Forme + Double Validation) ===
-        # Basé sur: Forme récente (10 matchs), consensus des 2 autres logiques
-        ml_home_strength = home_form
-        ml_away_strength = away_form
+        # === MA LOGIQUE (APEX-30: Système 8 modules) ===
+        # Remplacé par APEX-30: IFP, Force Off/Def, Domicile, Fatigue, Motivation, Absences, H2H
+        from services.apex30_service import APEX30Service, creer_equipe_analyse, creer_h2h_stats, MatchHistorique
         
-        ml_home_score, ml_away_score = self._predict_score(
-            ml_home_strength, ml_away_strength,
-            home_goals_avg, away_goals_avg
-        )
-        ml_confidence = min(0.7, 0.3 + abs(home_form - away_form))
-        ml_tip = self._generate_bet_tip(ml_home_score, ml_away_score, ml_confidence)
+        try:
+            apex30 = APEX30Service(self.db)
+            
+            # Préparer les données pour APEX-30
+            # Créer l'historique de matchs (simplifié à partir des données de forme)
+            home_matchs_data = []
+            away_matchs_data = []
+            
+            # Calculer les points domicile/extérieur à partir des standings
+            home_pts_dom = 2.0  # Default
+            home_pts_ext = 1.5
+            away_pts_dom = 2.0
+            away_pts_ext = 1.5
+            
+            if home_entry:
+                total_pts = home_entry.get('points', 30)
+                total_matchs = home_entry.get('played', 20)
+                if total_matchs > 0:
+                    avg_pts = total_pts / total_matchs
+                    home_pts_dom = avg_pts * 1.2  # Bonus domicile estimé
+                    home_pts_ext = avg_pts * 0.8
+            
+            if away_entry:
+                total_pts = away_entry.get('points', 30)
+                total_matchs = away_entry.get('played', 20)
+                if total_matchs > 0:
+                    avg_pts = total_pts / total_matchs
+                    away_pts_dom = avg_pts * 1.2
+                    away_pts_ext = avg_pts * 0.8
+            
+            # Créer les équipes pour APEX-30 avec les vrais 10 derniers matchs
+            # Récupérer les 10 derniers matchs via API-Football
+            home_last_matches = await api_football_service.get_team_last_matches(match.home_team, last=10)
+            away_last_matches = await api_football_service.get_team_last_matches(match.away_team, last=10)
+            
+            # Récupérer les positions au classement avec stats domicile/extérieur
+            home_standings_api = await api_football_service.get_team_standings_position(match.home_team)
+            away_standings_api = await api_football_service.get_team_standings_position(match.away_team)
+            
+            # Mettre à jour les points domicile/extérieur si disponibles
+            if home_standings_api.get("success"):
+                home_data = home_standings_api.get("home", {})
+                away_data = home_standings_api.get("away", {})
+                home_played = home_data.get("played", 1) or 1
+                away_played = away_data.get("played", 1) or 1
+                home_pts_dom = (home_data.get("win", 0) * 3 + home_data.get("draw", 0)) / home_played
+                home_pts_ext = (away_data.get("win", 0) * 3 + away_data.get("draw", 0)) / away_played
+            
+            if away_standings_api.get("success"):
+                home_data = away_standings_api.get("home", {})
+                away_data = away_standings_api.get("away", {})
+                home_played = home_data.get("played", 1) or 1
+                away_played = away_data.get("played", 1) or 1
+                away_pts_dom = (home_data.get("win", 0) * 3 + home_data.get("draw", 0)) / home_played
+                away_pts_ext = (away_data.get("win", 0) * 3 + away_data.get("draw", 0)) / away_played
+            
+            # Convertir les matchs API-Football au format APEX-30
+            home_matchs_data = home_last_matches.get("matches", []) if home_last_matches.get("success") else []
+            away_matchs_data = away_last_matches.get("matches", []) if away_last_matches.get("success") else []
+            
+            equipe_home = creer_equipe_analyse(
+                nom=match.home_team,
+                matchs_recents=home_matchs_data,
+                classement=home_position,
+                est_domicile=True,
+                points_domicile=home_pts_dom,
+                points_exterieur=home_pts_ext
+            )
+            
+            equipe_away = creer_equipe_analyse(
+                nom=match.away_team,
+                matchs_recents=away_matchs_data,
+                classement=away_position,
+                est_domicile=False,
+                points_domicile=away_pts_dom,
+                points_exterieur=away_pts_ext
+            )
+            
+            # Créer les stats H2H pour APEX-30
+            apex_h2h = creer_h2h_stats({
+                'home_wins': h2h_detailed.get('home_wins', 0),
+                'draws': h2h_detailed.get('draws', 0),
+                'away_wins': h2h_detailed.get('away_wins', 0),
+                'recent_winners': h2h_detailed.get('recent_winners', [])
+            })
+            
+            # Lancer l'analyse APEX-30
+            apex_result = apex30.analyser_match(equipe_home, equipe_away, apex_h2h)
+            
+            # Extraire les résultats
+            decision = apex_result['decision']
+            ml_home_score = decision['home_goals']
+            ml_away_score = decision['away_goals']
+            ml_confidence = decision['confiance_pct']
+            ml_tip = decision['pronostic']
+            
+            print(f"APEX-30: {match.home_team} vs {match.away_team} -> {ml_home_score}-{ml_away_score} ({ml_confidence:.0%})")
+            
+        except Exception as e:
+            # Fallback si APEX-30 échoue
+            print(f"APEX-30 fallback: {e}")
+            ml_home_strength = home_form
+            ml_away_strength = away_form
+            ml_home_score, ml_away_score = self._predict_score(
+                ml_home_strength, ml_away_strength,
+                home_goals_avg, away_goals_avg
+            )
+            ml_confidence = min(0.7, 0.3 + abs(home_form - away_form))
+            ml_tip = self._generate_bet_tip(ml_home_score, ml_away_score, ml_confidence)
         
         # === CONSENSUS FINAL ===
         # Moyenne des 3 logiques, pondérée par la confiance
