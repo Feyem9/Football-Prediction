@@ -1063,23 +1063,39 @@ class PredictionService:
             })
             
             # Lancer l'analyse APEX-30
-            apex_result = apex30.analyser_match(equipe_home, equipe_away, apex_h2h)
-            
-            # Extraire les résultats
-            decision = apex_result['decision']
-            ml_home_score = decision['home_goals']
-            ml_away_score = decision['away_goals']
-            ml_confidence = decision['confiance_pct']
-            ml_tip = decision['pronostic']
-            
-            # Sauvegarder les scores détaillés pour le frontend
-            import json
-            ml_analysis = json.dumps({
-                'equipe_home': apex_result['equipe_a']['scores'],
-                'equipe_away': apex_result['equipe_b']['scores']
-            })
-            
-            print(f"APEX-30: {match.home_team} vs {match.away_team} -> {ml_home_score}-{ml_away_score} ({ml_confidence:.0%})")
+            try:
+                apex_result = apex30.analyser_match(equipe_home, equipe_away, apex_h2h)
+                
+                # Extraire les résultats
+                decision = apex_result['decision']
+                ml_home_score = decision['home_goals']
+                ml_away_score = decision['away_goals']
+                ml_confidence = decision['confiance_pct']
+                ml_tip = decision['pronostic']
+                
+                # Sauvegarder les scores détaillés pour le frontend
+                import json
+                ml_analysis = json.dumps({
+                    'equipe_home': apex_result['equipe_a']['scores'],
+                    'equipe_away': apex_result['equipe_b']['scores']
+                })
+                
+                print(f"APEX-30 SUCCESS: {match.home_team} vs {match.away_team} -> {ml_home_score}-{ml_away_score}")
+                
+            except Exception as e:
+                # Fallback si APEX-30 échoue
+                print(f"❌ APEX-30 ERROR for {match.home_team} vs {match.away_team}: {str(e)}")
+                import traceback
+                print(traceback.format_exc())
+                ml_home_strength = home_form
+                ml_away_strength = away_form
+                ml_home_score, ml_away_score = self._predict_score(
+                    ml_home_strength, ml_away_strength,
+                    home_goals_avg, away_goals_avg
+                )
+                ml_confidence = min(0.7, 0.3 + abs(home_form - away_form))
+                ml_tip = self._generate_bet_tip(ml_home_score, ml_away_score, ml_confidence)
+                ml_analysis = None
             
         except Exception as e:
             # Fallback si APEX-30 échoue
