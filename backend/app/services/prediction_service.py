@@ -928,6 +928,40 @@ class PredictionService:
             home_matchs_data = home_last_matches.get("matches", []) if home_last_matches.get("success") else []
             away_matchs_data = away_last_matches.get("matches", []) if away_last_matches.get("success") else []
             
+            # === FALLBACK: Si API-Football ne retourne pas de matchs, utiliser les données de forme ===
+            from datetime import datetime, timedelta
+            
+            if not home_matchs_data and home_entry:
+                # Générer un historique simulé à partir de la forme (VVNDD)
+                form_str = home_entry.get("form", "NNNNN") or "NNNNN"
+                print(f"APEX-30 Fallback: {match.home_team} - utilisation forme {form_str}")
+                for i, res in enumerate(form_str[:10]):
+                    result_map = {'W': 'V', 'D': 'N', 'L': 'D', 'V': 'V', 'N': 'N'}
+                    home_matchs_data.append({
+                        'date': (datetime.now() - timedelta(days=(i+1)*7)).isoformat(),
+                        'domicile': (i % 2 == 0),
+                        'resultat': result_map.get(res, 'N'),
+                        'buts_pour': 2 if res in ['W', 'V'] else (1 if res in ['D', 'N'] else 0),
+                        'buts_contre': 0 if res in ['W', 'V'] else (1 if res in ['D', 'N'] else 2),
+                        'adversaire_classement': 10,
+                        'competition': 'Championnat'
+                    })
+            
+            if not away_matchs_data and away_entry:
+                form_str = away_entry.get("form", "NNNNN") or "NNNNN"
+                print(f"APEX-30 Fallback: {match.away_team} - utilisation forme {form_str}")
+                for i, res in enumerate(form_str[:10]):
+                    result_map = {'W': 'V', 'D': 'N', 'L': 'D', 'V': 'V', 'N': 'N'}
+                    away_matchs_data.append({
+                        'date': (datetime.now() - timedelta(days=(i+1)*7)).isoformat(),
+                        'domicile': (i % 2 == 1),
+                        'resultat': result_map.get(res, 'N'),
+                        'buts_pour': 2 if res in ['W', 'V'] else (1 if res in ['D', 'N'] else 0),
+                        'buts_contre': 0 if res in ['W', 'V'] else (1 if res in ['D', 'N'] else 2),
+                        'adversaire_classement': 10,
+                        'competition': 'Championnat'
+                    })
+            
             equipe_home = creer_equipe_analyse(
                 nom=match.home_team,
                 matchs_recents=home_matchs_data,
