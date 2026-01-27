@@ -1054,11 +1054,12 @@ class PredictionService:
             )
             
             # Créer les stats H2H pour APEX-30
+            h2h_data_apex = h2h_detailed if h2h_detailed else {}
             apex_h2h = creer_h2h_stats({
-                'home_wins': h2h_detailed.get('home_wins', 0),
-                'draws': h2h_detailed.get('draws', 0),
-                'away_wins': h2h_detailed.get('away_wins', 0),
-                'recent_winners': h2h_detailed.get('recent_winners', [])
+                'home_wins': h2h_data_apex.get('home_wins', 0),
+                'draws': h2h_data_apex.get('draws', 0),
+                'away_wins': h2h_data_apex.get('away_wins', 0),
+                'recent_winners': h2h_data_apex.get('recent_winners', [])
             })
             
             # Lancer l'analyse APEX-30
