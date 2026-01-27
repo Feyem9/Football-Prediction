@@ -1,14 +1,14 @@
 """add ma_logique_analysis column
 
-Revision ID: 2026_01_27_add_ma_logique_analysis
+Revision ID: 2026_01_27_apex_analysis
 Revises: 2026_01_23_gf_detailed
-Create Date: 2026-01-27 07:15:00.000000
+Create Date: 2026-01-27 07:20:00.000000
 
 """
 from alembic import op
 import sqlalchemy as sa
 
-revision = '2026_01_27_add_ma_logique_analysis'
+revision = '2026_01_27_apex_analysis'
 down_revision = '2026_01_23_gf_detailed'
 branch_labels = None
 depends_on = None
