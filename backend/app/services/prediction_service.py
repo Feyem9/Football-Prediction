@@ -928,7 +928,80 @@ class PredictionService:
             home_matchs_data = home_last_matches.get("matches", []) if home_last_matches.get("success") else []
             away_matchs_data = away_last_matches.get("matches", []) if away_last_matches.get("success") else []
             
-            # === FALLBACK: Si API-Football ne retourne pas de matchs, utiliser les données de forme ===
+            # === FALLBACK 1: Si API-Football échoue, essayer Football-Data.org ===
+            if not home_matchs_data and match.home_team_id:
+                try:
+                    fd_matches = await football_data_service.get_team_matches(
+                        match.home_team_id, status="FINISHED", limit=10
+                    )
+                    for fd_match in fd_matches.get("matches", [])[:10]:
+                        is_home = fd_match.get("homeTeam", {}).get("id") == match.home_team_id
+                        h_score = fd_match.get("score", {}).get("fullTime", {}).get("home", 0) or 0
+                        a_score = fd_match.get("score", {}).get("fullTime", {}).get("away", 0) or 0
+                        
+                        if is_home:
+                            buts_pour, buts_contre = h_score, a_score
+                        else:
+                            buts_pour, buts_contre = a_score, h_score
+                        
+                        if buts_pour > buts_contre:
+                            resultat = 'V'
+                        elif buts_pour < buts_contre:
+                            resultat = 'D'
+                        else:
+                            resultat = 'N'
+                        
+                        home_matchs_data.append({
+                            'date': fd_match.get("utcDate", ""),
+                            'domicile': is_home,
+                            'resultat': resultat,
+                            'buts_pour': buts_pour,
+                            'buts_contre': buts_contre,
+                            'adversaire_classement': 10,
+                            'competition': fd_match.get("competition", {}).get("name", "Championnat")
+                        })
+                    if home_matchs_data:
+                        print(f"APEX-30 Fallback FD: {match.home_team} - {len(home_matchs_data)} matchs")
+                except Exception as e:
+                    print(f"Football-Data.org fallback error for {match.home_team}: {e}")
+            
+            if not away_matchs_data and match.away_team_id:
+                try:
+                    fd_matches = await football_data_service.get_team_matches(
+                        match.away_team_id, status="FINISHED", limit=10
+                    )
+                    for fd_match in fd_matches.get("matches", [])[:10]:
+                        is_home = fd_match.get("homeTeam", {}).get("id") == match.away_team_id
+                        h_score = fd_match.get("score", {}).get("fullTime", {}).get("home", 0) or 0
+                        a_score = fd_match.get("score", {}).get("fullTime", {}).get("away", 0) or 0
+                        
+                        if is_home:
+                            buts_pour, buts_contre = h_score, a_score
+                        else:
+                            buts_pour, buts_contre = a_score, h_score
+                        
+                        if buts_pour > buts_contre:
+                            resultat = 'V'
+                        elif buts_pour < buts_contre:
+                            resultat = 'D'
+                        else:
+                            resultat = 'N'
+                        
+                        away_matchs_data.append({
+                            'date': fd_match.get("utcDate", ""),
+                            'domicile': is_home,
+                            'resultat': resultat,
+                            'buts_pour': buts_pour,
+                            'buts_contre': buts_contre,
+                            'adversaire_classement': 10,
+                            'competition': fd_match.get("competition", {}).get("name", "Championnat")
+                        })
+                    if away_matchs_data:
+                        print(f"APEX-30 Fallback FD: {match.away_team} - {len(away_matchs_data)} matchs")
+                except Exception as e:
+                    print(f"Football-Data.org fallback error for {match.away_team}: {e}")
+            
+            # === FALLBACK 2: Si toujours vide, utiliser les données de forme ===
             from datetime import datetime, timedelta
             
             if not home_matchs_data and home_entry:
