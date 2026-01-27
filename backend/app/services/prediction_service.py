@@ -1038,7 +1038,7 @@ class PredictionService:
             equipe_home = creer_equipe_analyse(
                 nom=match.home_team,
                 matchs_recents=home_matchs_data,
-                classement=home_position,
+                classement=home_pos if home_entry else 10,
                 est_domicile=True,
                 points_domicile=home_pts_dom,
                 points_exterieur=home_pts_ext
@@ -1047,7 +1047,7 @@ class PredictionService:
             equipe_away = creer_equipe_analyse(
                 nom=match.away_team,
                 matchs_recents=away_matchs_data,
-                classement=away_position,
+                classement=away_pos if away_entry else 10,
                 est_domicile=False,
                 points_domicile=away_pts_dom,
                 points_exterieur=away_pts_ext
