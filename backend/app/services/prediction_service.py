@@ -1222,7 +1222,7 @@ class PredictionService:
             Nombre de prédictions générées
         """
         from datetime import datetime, timezone, timedelta
-        
+         
         # Pour le diagnostic sur Render
         now_utc = datetime.now(timezone.utc)
         now_naive = now_utc.replace(tzinfo=None)
