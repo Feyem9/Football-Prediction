@@ -7,6 +7,9 @@ from typing import Optional, List
 from datetime import datetime, timezone, timedelta
 from sqlalchemy.orm import Session, joinedload
 from fastapi import HTTPException
+import logging
+
+logger = logging.getLogger(__name__)
 
 from models.match import Match
 from models.prediction import ExpertPrediction
