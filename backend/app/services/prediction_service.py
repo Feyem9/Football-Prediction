@@ -1221,19 +1221,26 @@ class PredictionService:
         Returns:
             Nombre de prédictions générées
         """
-        from datetime import datetime, timezone
+        from datetime import datetime, timezone, timedelta
         
-        # Utiliser une date naïve en UTC pour PostgreSQL si la colonne est naïve
-        now = datetime.now(timezone.utc).replace(tzinfo=None)
+        # Pour le diagnostic sur Render
+        now_utc = datetime.now(timezone.utc)
+        now_naive = now_utc.replace(tzinfo=None)
         
-        # Log pour diagnostic
-        logger.info(f"🔍 Recherche de matchs après {now} avec statuts SCHEDULED, TIMED, CALENDAR")
+        # On élargit : on prend les matchs depuis hier pour être sûr de ne rien rater
+        # à cause des décalages de fuseaux horaires sur le serveur.
+        search_start = now_naive - timedelta(hours=24)
         
-        # Matchs à venir sans prédiction
-        # On inclut CALENDAR car certaines API l'utilisent
+        logger.info(f"🔍 Diagnostic Prédictions: Now(UTC)={now_utc}, SearchStart={search_start}")
+        
+        # Vérifier le nombre total de matchs dans la base pour le debug
+        total_matches = self.db.query(Match).count()
+        logger.info(f"📊 Total matchs en base: {total_matches}")
+        
+        # Matchs sans prédiction (plus permissif sur le statut)
         matches_query = self.db.query(Match).filter(
-            Match.match_date > now,
-            Match.status.in_(["SCHEDULED", "TIMED", "CALENDAR"]),
+            Match.match_date > search_start,
+            Match.status.in_(["SCHEDULED", "TIMED", "CALENDAR", "IN_PLAY", "PAUSED"]),
             ~Match.id.in_(
                 self.db.query(ExpertPrediction.match_id)
             )
@@ -1241,7 +1248,12 @@ class PredictionService:
         
         matches = matches_query.limit(limit).all()
         
-        logger.info(f"🏟️ {len(matches)} matchs trouvés pour prédiction")
+        logger.info(f"🏟️ {len(matches)} matchs éligibles trouvés (limit={limit})")
+        
+        if len(matches) == 0 and total_matches > 0:
+            # Si on ne trouve rien mais qu'il y a des matchs, logguons le premier pour voir
+            first = self.db.query(Match).first()
+            logger.info(f"❓ Exemple de match en base: {first.home_team} vs {first.away_team}, Date={first.match_date}, Status={first.status}")
         
         count = 0
         for match in matches:
