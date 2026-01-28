@@ -16,7 +16,8 @@ from schemas.match import (
     CompetitionListResponse,
     StandingsResponse,
     PredictionResponse,
-    CombinedPredictionResponse
+    CombinedPredictionResponse,
+    Apex30FullReport
 )
 from schemas.h2h import H2HResponse
 from controllers import matches_controller
@@ -136,6 +137,15 @@ async def get_combined_prediction(match_id: int, db: Session = Depends(get_db)):
     Retourne la prédiction de chaque logique + la prédiction finale combinée.
     """
     return await matches_controller.get_combined_prediction(db, match_id)
+
+
+@router.get("/{match_id}/apex30-report", response_model=Apex30FullReport)
+async def get_apex30_report(match_id: int, db: Session = Depends(get_db)):
+    """
+    Récupère le rapport technique détaillé APEX-30 (8 modules).
+    Inclut les scores et l'analyse textuelle professionnelle pour chaque module.
+    """
+    return await matches_controller.get_apex30_report(db, match_id)
 
 
 # =====================

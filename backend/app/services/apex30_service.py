@@ -609,11 +609,125 @@ def creer_equipe_analyse(
     )
 
 
-def creer_h2h_stats(h2h_data: Dict) -> H2HStats:
-    """Crée un objet H2HStats à partir des données H2H de l'API"""
-    return H2HStats(
-        victoires_a=h2h_data.get('home_wins', 0),
-        nuls=h2h_data.get('draws', 0),
-        victoires_b=h2h_data.get('away_wins', 0),
-        derniers_gagnants=h2h_data.get('recent_winners', [])
-    )
+    def generer_rapport_detaille(self, analysis_data: Dict, home_name: str, away_name: str) -> List[Dict]:
+        """
+        Génère un rapport textuel professionnel basé sur les scores numériques.
+        Utilisé pour l'affichage du tableau détaillé sur le front-end.
+        """
+        if not analysis_data or 'equipe_home' not in analysis_data:
+            return []
+            
+        home_scores = analysis_data['equipe_home']
+        away_scores = analysis_data['equipe_away']
+        
+        modules_info = [
+            {
+                'id': 'ifp',
+                'nom': 'Indice de Forme Pondéré (IFP)',
+                'poids': 25,
+                'home_val': home_scores.get('ifp', 0),
+                'away_val': away_scores.get('ifp', 0),
+                'description': "Analyse la dynamique sur les 10 derniers matchs. Les victoires contre des équipes du Top 10 valent 1.3x plus que contre le bas de tableau."
+            },
+            {
+                'id': 'force_offensive',
+                'nom': 'Force Offensive',
+                'poids': 15,
+                'home_val': home_scores.get('force_offensive', 0),
+                'away_val': away_scores.get('force_offensive', 0),
+                'description': "Capacité à créer des occasions franches. Ce module pondère les buts marqués par le niveau de la défense adverse rencontrée."
+            },
+            {
+                'id': 'solidite_defensive',
+                'nom': 'Solidité Défensive',
+                'poids': 15,
+                'home_val': home_scores.get('solidite_defensive', 0),
+                'away_val': away_scores.get('solidite_defensive', 0),
+                'description': "Évalue la résistance du bloc. Une note de 8.4/10 indique une défense hermétique qui encaisse moins de 0.8 buts par match."
+            },
+            {
+                'id': 'facteur_domicile',
+                'nom': 'Loi Domicile / Extérieur',
+                'poids': 10,
+                'home_val': home_scores.get('facteur_domicile', 0),
+                'away_val': away_scores.get('facteur_domicile', 0),
+                'description': "Certaines équipes surperforment devant leur public (+0.5). Ce module ajuste le score selon le ratio points Domicile/Extérieur."
+            },
+            {
+                'id': 'fatigue',
+                'nom': 'Gestion Fatigue / Calendrier',
+                'poids': 5,
+                'home_val': home_scores.get('fatigue', 0),
+                'away_val': away_scores.get('fatigue', 0),
+                'description': "Impact physique basé sur le nombre de matchs joués en 14 jours. Un malus de -0.3 est appliqué dès le 4ème match consécutif."
+            },
+            {
+                'id': 'motivation',
+                'nom': 'Enjeu et Motivation',
+                'poids': 15,
+                'home_val': home_scores.get('motivation', 0),
+                'away_val': away_scores.get('motivation', 0),
+                'description': "Analyse situationnelle : lutte pour le titre, places européennes ou survie (maintien). Un bonus 'Survie' de +2.5 booste les outsiders."
+            },
+            {
+                'id': 'absences',
+                'nom': 'Impact Absences',
+                'poids': 5,
+                'home_val': home_scores.get('absences', 0),
+                'away_val': away_scores.get('absences', 0),
+                'description': "Pondère l'absence de joueurs cadres (capitaine, meilleur buteur) sur l'équilibre tactique global de l'équipe."
+            },
+            {
+                'id': 'h2h',
+                'nom': 'Historique H2H (Direct)',
+                'poids': 10,
+                'home_val': home_scores.get('h2h', 0),
+                'away_val': away_scores.get('h2h', 0),
+                'description': "Analyse l'ascendant psychologique historique. Une équipe qui reste sur 3 victoires en face-à-face reçoit un bonus de supériorité."
+            }
+        ]
+        
+        # Ajouter une explication personnalisée par module basée sur les valeurs
+        for mod in modules_info:
+            h = mod['home_val']
+            a = mod['away_val']
+            
+            if mod['id'] == 'ifp':
+                if h > a + 0.5:
+                    mod['analyse'] = f"{home_name} arrive avec une dynamique nettement supérieure, portée par des résultats probants contre des adversaires de calibre."
+                elif a > h + 0.5:
+                    mod['analyse'] = f"{away_name} domine statistiquement cette période, avec une forme ascendante comparée à {home_name}."
+                else:
+                    mod['analyse'] = "Les deux formations affichent une dynamique de résultats similaire sur leurs 10 dernières sorties."
+                    
+            elif mod['id'] == 'force_offensive':
+                if h > 2.0:
+                    mod['analyse'] = f"L'attaque de {home_name} est en surchauffe, capable de percer n'importe quel bloc actuel."
+                elif h > a + 0.5:
+                    mod['analyse'] = f"Supériorité offensive notable pour {home_name} qui génère plus de danger réel devant le but."
+                else:
+                    mod['analyse'] = "Équilibre offensif entre les deux formations."
+                    
+            elif mod['id'] == 'solidite_defensive':
+                if h > 8.0 and a < 5.0:
+                    mod['analyse'] = f"Gros écart défensif : {home_name} est une forteresse tandis que {away_name} montre des lacunes inquiétantes."
+                elif h > 7.0:
+                    mod['analyse'] = f"Sûreté défensive validée pour {home_name} qui concède très peu d'occasions franches."
+                else:
+                    mod['analyse'] = "Le match pourrait s'ouvrir suite à des approximations défensives de part et d'autre."
+            
+            elif mod['id'] == 'motivation':
+                if h > 2.0 or a > 2.0:
+                    mod['analyse'] = "L'enjeu est colossal pour ce match (Titre ou Maintien), ce qui garantit une intensité maximale."
+                else:
+                    mod['analyse'] = "Niveau de motivation standard pour un match de milieu de saison."
+            
+            else:
+                if h > a:
+                    mod['analyse'] = f"Léger avantage pour {home_name} sur ce module spécifique."
+                elif a > h:
+                    mod['analyse'] = f"Avantage tactique détecté pour {away_name} selon ce paramètre."
+                else:
+                    mod['analyse'] = "Équilibre neutre sur ce facteur."
+
+        return modules_info

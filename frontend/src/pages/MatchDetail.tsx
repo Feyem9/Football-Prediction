@@ -3,14 +3,17 @@
  */
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { getMatch } from '../lib/api';
-import type { Match } from '../types';
+import { getMatch, getApex30Report } from '../lib/api';
+import type { Match, Apex30FullReport } from '../types';
 
 export default function MatchDetail() {
   const { id } = useParams<{ id: string }>();
   const [match, setMatch] = useState<Match | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [apexReport, setApexReport] = useState<Apex30FullReport | null>(null);
+  const [showFullLogic, setShowFullLogic] = useState(false);
+  const [loadingReport, setLoadingReport] = useState(false);
 
   const parseImportantMatch = (jsonStr?: string) => {
     if (!jsonStr) return null;
@@ -21,14 +24,6 @@ export default function MatchDetail() {
     }
   };
 
-  const parseApexAnalysis = (jsonStr?: string) => {
-    if (!jsonStr) return null;
-    try {
-      return JSON.parse(jsonStr);
-    } catch {
-      return null;
-    }
-  };
 
   useEffect(() => {
     async function fetchData() {
@@ -46,6 +41,26 @@ export default function MatchDetail() {
     }
     fetchData();
   }, [id]);
+
+  const fetchFullAnalysis = async () => {
+    if (!id || apexReport) {
+      setShowFullLogic(true);
+      return;
+    }
+    
+    try {
+      setLoadingReport(true);
+      const report = await getApex30Report(parseInt(id));
+      setApexReport(report);
+      setShowFullLogic(true);
+    } catch (err) {
+      console.error("Erreur lors de la récupération du rapport APEX-30", err);
+      // Fallback: montrer quand même la modal avec un message d'erreur ou données partielles
+      setShowFullLogic(true);
+    } finally {
+      setLoadingReport(false);
+    }
+  };
 
   if (loading) {
     return (
@@ -713,88 +728,36 @@ export default function MatchDetail() {
                   "{prediction.ma_logique_tip ? `Ma Logique suggère : ${prediction.ma_logique_tip}` : 'Pas de conseil Ma Logique'}"
                 </p>
 
-                {/* PREUVES Ma Logique - APEX-30 8 MODULES */}
-                <div className="border-t border-purple-500/20 pt-4 mt-4 text-xs">
-                  <p className="text-purple-400 uppercase tracking-wide mb-3 flex items-center gap-2 font-bold">
-                    <span>🧠</span> SYSTÈME APEX-30 - ANALYSE 8 MODULES
+                {/* Version Simplifiée Ma Logique */}
+                <div className="border-t border-purple-500/20 pt-4 mt-4">
+                  <p className="text-purple-400 uppercase tracking-wide mb-3 flex items-center gap-2 font-bold text-xs">
+                    <span>🧠</span> ANALYSE SCIENTIFIQUE APEX-30
                   </p>
                   
-                  {(() => {
-                    const apex = parseApexAnalysis(prediction.ma_logique_analysis);
-                    if (!apex) return (
-                      <div className="bg-slate-800/50 rounded-lg p-3 italic text-slate-400">
-                        Analyse détaillée non disponible pour ce match.
-                      </div>
-                    );
+                  <div className="bg-slate-900/40 rounded-xl p-4 border border-purple-500/20 mb-4">
+                    <p className="text-sm text-slate-300 leading-relaxed mb-3">
+                      Le moteur <strong>APEX-30</strong> a analysé ce match sur 8 modules techniques (IFP, Fatigue, Motivation, H2H...). 
+                    </p>
+                    <div className="flex items-center gap-2 text-xs text-purple-300 bg-purple-500/10 p-2 rounded-lg border border-purple-500/20">
+                      <span>💡</span>
+                      <span>L'indice de confiance est de {Math.round((prediction.ma_logique_confidence || 0) * 100)}% basé sur la convergence des indicateurs.</span>
+                    </div>
+                  </div>
 
-                    const modules = [
-                      { key: 'ifp', label: 'Forme (IFP)', weight: 25, color: 'from-purple-500 to-indigo-500' },
-                      { key: 'force_offensive', label: 'Force Offensive', weight: 15, color: 'from-orange-500 to-red-500' },
-                      { key: 'solidite_defensive', label: 'Défense', weight: 15, color: 'from-blue-500 to-cyan-500' },
-                      { key: 'facteur_domicile', label: 'Loi Domicile', weight: 10, color: 'from-emerald-500 to-green-500' },
-                      { key: 'motivation', label: 'Enjeu/Motivation', weight: 15, color: 'from-yellow-500 to-orange-500' },
-                      { key: 'h2h', label: 'Historique H2H', weight: 10, color: 'from-pink-500 to-rose-500' },
-                      { key: 'fatigue', label: 'Fatigue Physique', weight: 5, color: 'from-slate-500 to-slate-400' },
-                      { key: 'absences', label: 'Impact Absences', weight: 5, color: 'from-red-600 to-red-400' },
-                    ];
-
-                    return (
-                      <div className="grid grid-cols-1 gap-3">
-                        {modules.map((mod) => {
-                          const valH = apex.equipe_home[mod.key] || 0;
-                          const valA = apex.equipe_away[mod.key] || 0;
-                          
-                          // Normalisation pour affichage (IFP ~ 3 max, FO ~ 5 max, Motivation ~ 3 max etc)
-                          const maxVal = mod.key === 'solidite_defensive' ? 10 : (mod.key === 'force_offensive' ? 4 : 3);
-                          const pctH = Math.min(100, (valH / maxVal) * 100);
-                          const pctA = Math.min(100, (valA / maxVal) * 100);
-
-                          return (
-                            <div key={mod.key} className="bg-slate-800/50 rounded-lg p-2 border border-slate-700/30">
-                              <div className="flex justify-between items-center mb-1">
-                                <span className="font-bold text-slate-300">{mod.label}</span>
-                                <span className="text-[10px] text-slate-500">Poids : {mod.weight}%</span>
-                              </div>
-                              
-                              <div className="space-y-1.5">
-                                {/* Home Bar */}
-                                <div className="flex items-center gap-2">
-                                  <div className="w-16 truncate text-[9px] text-slate-400 text-right">{match.home_team_short || match.home_team}</div>
-                                  <div className="flex-1 h-1.5 bg-slate-700 rounded-full overflow-hidden">
-                                    <div 
-                                      className={`h-full bg-gradient-to-r ${mod.color} transition-all duration-1000`}
-                                      style={{ width: `${pctH}%` }}
-                                    ></div>
-                                  </div>
-                                  <div className="w-8 text-[9px] font-bold text-white text-right">{valH.toFixed(1)}</div>
-                                </div>
-                                
-                                {/* Away Bar */}
-                                <div className="flex items-center gap-2">
-                                  <div className="w-16 truncate text-[9px] text-slate-400 text-right">{match.away_team_short || match.away_team}</div>
-                                  <div className="flex-1 h-1.5 bg-slate-700 rounded-full overflow-hidden">
-                                    <div 
-                                      className={`h-full bg-gradient-to-r ${mod.color} opacity-60 transition-all duration-1000`}
-                                      style={{ width: `${pctA}%` }}
-                                    ></div>
-                                  </div>
-                                  <div className="w-8 text-[9px] font-bold text-slate-400 text-right">{valA.toFixed(1)}</div>
-                                </div>
-                              </div>
-                            </div>
-                          );
-                        })}
-
-                        <div className="bg-purple-900/20 border border-purple-500/30 rounded-lg p-3 mt-2">
-                          <p className="text-purple-300 font-bold mb-1">💡 Ma Logique APEX-30 :</p>
-                          <p className="text-[10px] text-slate-400 leading-relaxed italic">
-                            APEX-30 combine ces 8 modules scientifiques pour détecter les opportunités. 
-                            Plus l'écart de score total est grand entre les deux équipes, plus la confiance est élevée.
-                          </p>
-                        </div>
-                      </div>
-                    );
-                  })()}
+                  <button 
+                    onClick={fetchFullAnalysis}
+                    disabled={loadingReport}
+                    className="w-full py-3 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-bold text-sm shadow-lg shadow-purple-900/20 transition-all flex items-center justify-center gap-2 group"
+                  >
+                    {loadingReport ? (
+                      <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    ) : (
+                      <>
+                        <span>📄 Ma logique complète, cliquez ici</span>
+                        <span className="group-hover:translate-x-1 transition-transform">→</span>
+                      </>
+                    )}
+                  </button>
                 </div>
               </div>
             </div>
@@ -822,6 +785,113 @@ export default function MatchDetail() {
           </div>
         )}
       </div>
+
+      {/* MODAL - ANALYSE COMPLÈTE APEX-30 */}
+      {showFullLogic && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6">
+          {/* Overlay */}
+          <div 
+            className="absolute inset-0 bg-slate-950/80 backdrop-blur-md"
+            onClick={() => setShowFullLogic(false)}
+          />
+          
+          {/* Modal Content */}
+          <div className="relative w-full max-w-4xl max-h-[90vh] overflow-hidden bg-slate-900 border border-slate-700 rounded-3xl shadow-2xl flex flex-col">
+            {/* Header */}
+            <div className="p-6 border-b border-slate-800 flex items-center justify-between bg-gradient-to-r from-slate-900 to-purple-900/20">
+              <div className="flex items-center gap-3">
+                <span className="text-3xl">🧠</span>
+                <div>
+                  <h2 className="text-xl font-black text-white leading-tight">Rapport Technique APEX-30</h2>
+                  <p className="text-xs text-purple-400 font-bold uppercase tracking-widest">Analyse Approfondie des 8 Modules</p>
+                </div>
+              </div>
+              <button 
+                onClick={() => setShowFullLogic(false)}
+                className="w-10 h-10 rounded-full bg-slate-800 text-slate-400 hover:text-white flex items-center justify-center transition-colors"
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Scrollable Body */}
+            <div className="flex-1 overflow-y-auto p-6 space-y-8 custom-scrollbar">
+              {apexReport ? (
+                <>
+                  <div className="bg-purple-500/10 border border-purple-500/20 rounded-2xl p-4 flex items-start gap-4">
+                    <span className="text-2xl mt-1">💡</span>
+                    <div>
+                      <h4 className="font-bold text-white mb-1">Résumé de l'expert</h4>
+                      <p className="text-sm text-slate-300 leading-relaxed italic">
+                        "{apexReport.summary}"
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Table header */}
+                  <div className="hidden md:grid grid-cols-12 gap-4 px-4 py-2 text-[10px] font-bold text-slate-500 uppercase tracking-widest border-b border-slate-800">
+                    <div className="col-span-4 text-left">Module d'analyse</div>
+                    <div className="col-span-1 text-center">Poids</div>
+                    <div className="col-span-3 text-center">Score {match?.home_team_short || 'Dom.'} vs {match?.away_team_short || 'Ext.'}</div>
+                    <div className="col-span-4 text-left">Interprétation Tactique</div>
+                  </div>
+
+                  {/* Modules rows */}
+                  <div className="space-y-4">
+                    {apexReport.modules.map((mod) => (
+                      <div key={mod.id} className="bg-slate-800/30 rounded-2xl border border-slate-800 p-4 md:p-0 md:bg-transparent md:border-0 md:rounded-none md:grid md:grid-cols-12 md:gap-4 md:items-center hover:bg-slate-800/20 transition-colors">
+                        {/* Mobile Module Name */}
+                        <div className="md:col-span-4 mb-3 md:mb-0 md:px-4">
+                          <h5 className="font-bold text-white text-sm md:text-base">{mod.nom}</h5>
+                          <p className="text-[10px] text-slate-500 italic mt-0.5">{mod.description}</p>
+                        </div>
+
+                        {/* Poids */}
+                        <div className="hidden md:block md:col-span-1 text-center">
+                          <span className="text-xs font-bold text-slate-400">{mod.poids}%</span>
+                        </div>
+
+                        {/* Scores */}
+                        <div className="md:col-span-3 flex items-center justify-center gap-4 mb-4 md:mb-0">
+                          <div className="text-center">
+                            <span className={`inline-block w-10 h-10 rounded-xl flex items-center justify-center font-bold text-lg ${mod.home_val >= mod.away_val ? 'bg-purple-600 text-white' : 'bg-slate-800 text-slate-400'}`}>
+                              {mod.home_val.toFixed(1)}
+                            </span>
+                          </div>
+                          <span className="text-slate-600 font-bold">vs</span>
+                          <div className="text-center">
+                            <span className={`inline-block w-10 h-10 rounded-xl flex items-center justify-center font-bold text-lg ${mod.away_val > mod.home_val ? 'bg-indigo-600 text-white' : 'bg-slate-800 text-slate-400'}`}>
+                              {mod.away_val.toFixed(1)}
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Detail Analyse */}
+                        <div className="md:col-span-4 md:px-4 border-t border-slate-800 pt-3 md:border-0 md:pt-0">
+                          <p className="text-xs text-slate-300 leading-relaxed">
+                            {mod.analyse}
+                          </p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </>
+              ) : (
+                <div className="py-20 text-center">
+                  <div className="w-12 h-12 border-4 border-purple-500 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+                  <p className="text-slate-400">Génération du rapport technique en cours...</p>
+                </div>
+              )}
+            </div>
+
+            {/* Footer */}
+            <div className="p-6 border-t border-slate-800 bg-slate-900 flex justify-between items-center text-[10px] text-slate-500 uppercase tracking-widest font-bold">
+              <span>Moteur de calcul : Pronoscore APEX-30 v2.1</span>
+              <span>© 2026 FOOTBALL-PREDICTION</span>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

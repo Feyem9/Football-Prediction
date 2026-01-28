@@ -172,3 +172,21 @@ export interface CompetitionsResponse {
   count: number;
   competitions: Competition[];
 }
+
+export interface Apex30ModuleReport {
+  id: string;
+  nom: string;
+  poids: number;
+  home_val: number;
+  away_val: number;
+  description: string;
+  analyse: string;
+}
+
+export interface Apex30FullReport {
+  match_id: number;
+  home_team: string;
+  away_team: string;
+  modules: Apex30ModuleReport[];
+  summary: string;
+}

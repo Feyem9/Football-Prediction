@@ -21,7 +21,9 @@ from schemas.match import (
     PredictionResponse,
     CombinedPredictionResponse,
     LogicPredictionResult,
-    LogicEvidenceSchema
+    LogicEvidenceSchema,
+    Apex30FullReport,
+    Apex30ModuleReport
 )
 from services.football_api import football_data_service, FootballDataService
 from services.match_sync import MatchSyncService
@@ -388,6 +390,49 @@ async def get_match_prediction(db: Session, match_id: int) -> PredictionResponse
         raise HTTPException(status_code=500, detail="Impossible de générer la prédiction")
     
     return prediction
+
+
+async def get_apex30_report(db: Session, match_id: int) -> Apex30FullReport:
+    """Récupère le rapport détaillé APEX-30 pour un match."""
+    match = db.query(Match).filter(Match.id == match_id).first()
+    if not match:
+        raise HTTPException(status_code=404, detail="Match non trouvé")
+    
+    # Récupérer la prédiction associée
+    prediction = db.query(ExpertPrediction).filter(ExpertPrediction.match_id == match_id).first()
+    
+    if not prediction or not prediction.ma_logique_analysis:
+        raise HTTPException(status_code=404, detail="Analyse APEX-30 non disponible pour ce match")
+    
+    import json
+    from services.apex30_service import APEX30Service
+    
+    try:
+        analysis_data = json.loads(prediction.ma_logique_analysis)
+        apex30 = APEX30Service(db)
+        
+        modules = apex30.generer_rapport_detaille(
+            analysis_data, 
+            match.home_team, 
+            match.away_team
+        )
+        
+        summary = (
+            f"Analyse APEX-30 pour {match.home_team} vs {match.away_team}. "
+            f"Basée sur 8 modules pondérés. Confiance: {int(prediction.ma_logique_confidence * 100)}%."
+        )
+        
+        return Apex30FullReport(
+            match_id=match_id,
+            home_team=match.home_team,
+            away_team=match.away_team,
+            modules=[Apex30ModuleReport(**m) for m in modules],
+            summary=summary
+        )
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Erreur lors de la génération du rapport: {str(e)}")
 
 
 # =====================

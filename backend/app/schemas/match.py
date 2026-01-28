@@ -261,5 +261,25 @@ class CombinedPredictionResponse(BaseModel):
     all_agree: bool
 
 
+class Apex30ModuleReport(BaseModel):
+    """Un module de l'analyse APEX-30."""
+    id: str
+    nom: str
+    poids: int
+    home_val: float
+    away_val: float
+    description: str
+    analyse: str
+
+
+class Apex30FullReport(BaseModel):
+    """Rapport complet APEX-30 avec les 8 modules détaillés."""
+    match_id: int
+    home_team: str
+    away_team: str
+    modules: List[Apex30ModuleReport]
+    summary: str
+
+
 # Forward reference resolution
 MatchResponse.model_rebuild()
