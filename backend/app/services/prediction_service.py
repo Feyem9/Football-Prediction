@@ -1086,7 +1086,7 @@ class PredictionService:
                 # Fallback si APEX-30 échoue
                 print(f"❌ APEX-30 ERROR for {match.home_team} vs {match.away_team}: {str(e)}")
                 import traceback
-                print(traceback.format_exc())
+                traceback.print_exc()
                 ml_home_strength = home_form
                 ml_away_strength = away_form
                 ml_home_score, ml_away_score = self._predict_score(
@@ -1100,6 +1100,8 @@ class PredictionService:
         except Exception as e:
             # Fallback si APEX-30 échoue
             print(f"APEX-30 fallback: {e}")
+            import traceback
+            traceback.print_exc()
             ml_home_strength = home_form
             ml_away_strength = away_form
             ml_home_score, ml_away_score = self._predict_score(

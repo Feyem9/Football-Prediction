@@ -1,7 +1,7 @@
 /**
  * Badge Component - Indicateur coloré
  */
-import { ReactNode } from 'react';
+import type { ReactNode } from 'react';
 
 interface BadgeProps {
   children: ReactNode;

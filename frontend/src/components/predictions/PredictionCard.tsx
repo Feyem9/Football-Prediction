@@ -1,7 +1,7 @@
 /**
  * PredictionCard Component - Affiche les 3 logiques de prédiction
  */
-import type { CombinedPrediction, LogicPrediction } from '../types';
+import type { CombinedPrediction, LogicPrediction } from '../../types';
 
 interface PredictionCardProps {
   prediction: CombinedPrediction;
@@ -50,13 +50,13 @@ function LogicBox({
 }
 
 export default function PredictionCard({ prediction }: PredictionCardProps) {
-  const consensusColors = {
+  const consensusColors: Record<'FORT' | 'MOYEN' | 'FAIBLE', string> = {
     FORT: 'text-green-400 bg-green-900/50 border-green-500',
     MOYEN: 'text-yellow-400 bg-yellow-900/50 border-yellow-500',
     FAIBLE: 'text-red-400 bg-red-900/50 border-red-500',
   };
   
-  const consensusEmoji = {
+  const consensusEmoji: Record<'FORT' | 'MOYEN' | 'FAIBLE', string> = {
     FORT: '🟢',
     MOYEN: '🟡',
     FAIBLE: '🔴',

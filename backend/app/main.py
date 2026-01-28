@@ -97,6 +97,15 @@ async def lifespan(app: FastAPI):
                 conn.execute(text("ALTER TABLE expert_predictions ADD COLUMN away_goals_avg FLOAT DEFAULT 0.0"))
                 conn.commit()
                 print("✅ Auto-migration: colonnes avg_goals ajoutées")
+            # Vérifier et ajouter ma_logique_analysis si manquant
+            result = conn.execute(text("""
+                SELECT column_name FROM information_schema.columns 
+                WHERE table_name='expert_predictions' AND column_name='ma_logique_analysis'
+            """))
+            if not result.fetchone():
+                conn.execute(text("ALTER TABLE expert_predictions ADD COLUMN ma_logique_analysis TEXT"))
+                conn.commit()
+                print("✅ Auto-migration: colonne ma_logique_analysis ajoutée")
     except Exception as e:
         print(f"⚠️ Auto-migration ignorée: {e}")
     

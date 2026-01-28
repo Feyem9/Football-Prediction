@@ -1,0 +1,11 @@
+Deleting existing prediction for match 1022
+DEBUG: Generating prediction for match 1022: Liverpool FC vs Qarabağ Ağdam FK
+APEX-30 Fallback FD: Liverpool FC - 10 matchs
+APEX-30 Fallback FD: Qarabağ Ağdam FK - 7 matchs
+DEBUG APEX: Analysing Liverpool FC...
+DEBUG APEX: Analysing Qarabağ Ağdam FK...
+DEBUG APEX: Analysing H2H...
+DEBUG APEX: Total scores calculated: 2.2899 vs 1.8934285714285712
+APEX-30 SUCCESS: Liverpool FC vs Qarabağ Ağdam FK -> 2-1
+Function generate_prediction finished.
+ML Analysis content: {"equipe_home": {"ifp": 2.1195999999999997, "force_offensive": 1.5, "solidite_defensive": 8.4, "facteur_domicile": 0.5, "fatigue": 0, "motivation": 1.5, "absences": 0, "h2h": 0}, "equipe_away": {"ifp": 1.445142857142857, "force_offensive": 2.0285714285714285, "solidite_defensive": 4.685714285714285, "facteur_domicile": 0.0, "fatigue": 0, "motivation": 3.5, "absences": 0, "h2h": 0}}

@@ -1,7 +1,8 @@
 /**
  * Button Component - Bouton stylisé réutilisable
  */
-import { ButtonHTMLAttributes, ReactNode } from 'react';
+import { type ButtonHTMLAttributes } from 'react';
+import type { ReactNode } from 'react';
 
 interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: 'primary' | 'secondary' | 'outline' | 'ghost';

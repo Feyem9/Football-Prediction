@@ -1,7 +1,7 @@
 /**
  * Card Component - Container avec style glassmorphism
  */
-import { ReactNode } from 'react';
+import type { ReactNode } from 'react';
 
 interface CardProps {
   children: ReactNode;

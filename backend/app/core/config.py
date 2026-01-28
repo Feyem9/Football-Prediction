@@ -44,7 +44,7 @@ class Settings(BaseSettings):
     # API-Football (RapidAPI) pour cartons et corners
     rapidapi_key: str = os.getenv("RAPIDAPI_KEY", "")
     
-    model_config = SettingsConfigDict(env_file=".env", case_sensitive=False)
+    model_config = SettingsConfigDict(env_file=".env", case_sensitive=False, extra="ignore")
 
 
 @lru_cache()

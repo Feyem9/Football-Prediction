@@ -2,7 +2,7 @@
  * Standings Page - Classements Modernes
  */
 import { useState, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 import { getStandings } from '../lib/api';
 import type { Standing } from '../types';
 

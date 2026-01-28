@@ -175,6 +175,7 @@ async def regenerate_predictions(
                 await pred_service.generate_prediction(match)
                 count += 1
             except Exception as e:
+                db.rollback()
                 errors.append(f"{match.home_team} vs {match.away_team}: {str(e)}")
         
         return {

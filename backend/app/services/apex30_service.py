@@ -99,12 +99,15 @@ class APEX30Service:
         self.rapport = []
         
         # Phase 1: Analyser équipe A
+        print(f"DEBUG APEX: Analysing {equipe_a.nom}...")
         scores_a = self._analyser_equipe(equipe_a)
         
         # Phase 2: Analyser équipe B
+        print(f"DEBUG APEX: Analysing {equipe_b.nom}...")
         scores_b = self._analyser_equipe(equipe_b)
         
         # Phase 3: Analyser H2H
+        print(f"DEBUG APEX: Analysing H2H...")
         h2h_scores = self._analyser_h2h(h2h, equipe_a.nom, equipe_b.nom)
         scores_a['h2h'] = h2h_scores['equipe_a']
         scores_b['h2h'] = h2h_scores['equipe_b']
@@ -112,6 +115,7 @@ class APEX30Service:
         # Phase 4: Calculer scores totaux
         score_total_a = self._calculer_score_total(scores_a)
         score_total_b = self._calculer_score_total(scores_b)
+        print(f"DEBUG APEX: Total scores calculated: {score_total_a} vs {score_total_b}")
         
         # Phase 5: Générer décision
         decision = self._generer_decision(
@@ -282,14 +286,20 @@ class APEX30Service:
             return 0
         
         # Compter les matchs dans les 14 derniers jours
-        now = datetime.now()
+        import datetime as dt
+        from datetime import timezone
+        now = dt.datetime.now(timezone.utc)
         matchs_recents = 0
         
         for match in equipe.matchs_historique[:5]:
-            if isinstance(match.date, datetime):
-                days_ago = (now - match.date).days
-                if days_ago <= 14:
-                    matchs_recents += 1
+            # S'assurer que les deux sont aware pour la soustraction
+            match_date = match.date
+            if match_date.tzinfo is None:
+                match_date = match_date.replace(tzinfo=timezone.utc)
+            
+            days_ago = (now - match_date).days
+            if days_ago <= 14:
+                matchs_recents += 1
         
         # Impact fatigue
         if matchs_recents >= 4:
@@ -552,14 +562,18 @@ def creer_equipe_analyse(
                 resultat = 'N'
             
             # Date du match
+            from datetime import timezone
             match_date = match.get('match_date')
             if isinstance(match_date, str):
                 try:
                     match_date = datetime.fromisoformat(match_date.replace('Z', '+00:00'))
                 except:
-                    match_date = datetime.now() - timedelta(days=7)
+                    match_date = datetime.now(timezone.utc) - timedelta(days=7)
             elif not isinstance(match_date, datetime):
-                match_date = datetime.now() - timedelta(days=7)
+                match_date = datetime.now(timezone.utc) - timedelta(days=7)
+            
+            if match_date.tzinfo is None:
+                match_date = match_date.replace(tzinfo=timezone.utc)
             
             adversaire_rank = match.get('opponent_rank', 10)
             competition = match.get('competition', 'Championnat')

@@ -20,9 +20,9 @@ export function usePrediction(matchId: number | null) {
       try {
         setLoading(true);
         setError(null);
-        const data = await getCombinedPrediction(matchId);
+        const data = await getCombinedPrediction(matchId as number);
         setPrediction(data);
-      } catch (err) {
+      } catch {
         setError('Prédiction non disponible');
         setPrediction(null);
       } finally {
