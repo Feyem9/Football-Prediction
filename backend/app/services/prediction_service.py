@@ -1213,7 +1213,12 @@ class PredictionService:
     
     async def generate_predictions_for_upcoming(self, limit: int = 20) -> int:
         """
-        Génère des prédictions pour les prochains matchs.
+        Génère des prédictions pour les matchs sans prédiction.
+        
+        Version améliorée qui:
+        - Ne dépend pas des comparaisons de timezone
+        - Trouve TOUS les matchs éligibles (passés récents + futurs)
+        - Log détaillé pour le diagnostic
         
         Args:
             limit: Nombre maximum de matchs à traiter
@@ -1221,40 +1226,47 @@ class PredictionService:
         Returns:
             Nombre de prédictions générées
         """
-        from datetime import datetime, timezone, timedelta
-         
-        # Pour le diagnostic sur Render
-        now_utc = datetime.now(timezone.utc)
-        now_naive = now_utc.replace(tzinfo=None)
-        
-        # On élargit : on prend les matchs depuis hier pour être sûr de ne rien rater
-        # à cause des décalages de fuseaux horaires sur le serveur.
-        search_start = now_naive - timedelta(hours=24)
-        
-        logger.info(f"🔍 Diagnostic Prédictions: Now(UTC)={now_utc}, SearchStart={search_start}")
-        
-        # Vérifier le nombre total de matchs dans la base pour le debug
+        # Étape 1: Compter ce qu'on a en base
         total_matches = self.db.query(Match).count()
-        logger.info(f"📊 Total matchs en base: {total_matches}")
+        total_predictions = self.db.query(ExpertPrediction).count()
+        logger.info(f"📊 Base de données: {total_matches} matchs, {total_predictions} prédictions existantes")
         
-        # Matchs sans prédiction (plus permissif sur le statut)
-        matches_query = self.db.query(Match).filter(
-            Match.match_date > search_start,
-            Match.status.in_(["SCHEDULED", "TIMED", "CALENDAR", "IN_PLAY", "PAUSED"]),
-            ~Match.id.in_(
-                self.db.query(ExpertPrediction.match_id)
+        # Étape 2: Récupérer les IDs des matchs qui ont déjà une prédiction
+        existing_prediction_ids = [
+            p.match_id for p in self.db.query(ExpertPrediction.match_id).all()
+        ]
+        logger.info(f"� {len(existing_prediction_ids)} matchs déjà prédits")
+        
+        # Étape 3: Trouver TOUS les matchs sans prédiction (pas de filtre de date!)
+        # On filtre seulement par statut et on exclut ceux déjà prédits
+        valid_statuses = ["SCHEDULED", "TIMED", "CALENDAR", "IN_PLAY", "PAUSED"]
+        
+        if existing_prediction_ids:
+            matches_query = self.db.query(Match).filter(
+                Match.status.in_(valid_statuses),
+                ~Match.id.in_(existing_prediction_ids)
             )
-        ).order_by(Match.match_date)
+        else:
+            # Aucune prédiction existante, on prend tout
+            matches_query = self.db.query(Match).filter(
+                Match.status.in_(valid_statuses)
+            )
         
-        matches = matches_query.limit(limit).all()
+        # Trier par date et limiter
+        matches = matches_query.order_by(Match.match_date).limit(limit).all()
         
-        logger.info(f"🏟️ {len(matches)} matchs éligibles trouvés (limit={limit})")
+        logger.info(f"🏟️ {len(matches)} matchs éligibles trouvés pour génération (limit={limit})")
         
-        if len(matches) == 0 and total_matches > 0:
-            # Si on ne trouve rien mais qu'il y a des matchs, logguons le premier pour voir
-            first = self.db.query(Match).first()
-            logger.info(f"❓ Exemple de match en base: {first.home_team} vs {first.away_team}, Date={first.match_date}, Status={first.status}")
+        # Debug: montrer le premier match trouvé
+        if matches:
+            first = matches[0]
+            logger.info(f"✅ Premier match à traiter: {first.home_team} vs {first.away_team}, Date={first.match_date}, Status={first.status}")
+        elif total_matches > 0:
+            # Aucun match éligible mais il y en a en base - montrer pourquoi
+            sample = self.db.query(Match).first()
+            logger.warning(f"⚠️ Aucun match éligible. Exemple en base: {sample.home_team} vs {sample.away_team}, Status={sample.status}")
         
+        # Étape 4: Générer les prédictions
         count = 0
         for match in matches:
             try:
