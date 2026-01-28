@@ -1,0 +1,10 @@
+import sqlite3
+conn = sqlite3.connect('backend/app/test.db')
+cursor = conn.cursor()
+cursor.execute("SELECT COUNT(*) FROM matches")
+print(f"Total matches: {cursor.fetchone()[0]}")
+cursor.execute("SELECT COUNT(*) FROM expert_predictions")
+print(f"Total predictions: {cursor.fetchone()[0]}")
+cursor.execute("SELECT COUNT(*) FROM expert_predictions WHERE ma_logique_analysis IS NOT NULL")
+print(f"Predictions with APEX-30 analysis: {cursor.fetchone()[0]}")
+conn.close()
