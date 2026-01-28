@@ -401,8 +401,23 @@ async def get_apex30_report(db: Session, match_id: int) -> Apex30FullReport:
     # Récupérer la prédiction associée
     prediction = db.query(ExpertPrediction).filter(ExpertPrediction.match_id == match_id).first()
     
+    # Si la prédiction n'existe pas ou si l'analyse APEX-30 est manquante (vieille prédiction en base)
     if not prediction or not prediction.ma_logique_analysis:
-        raise HTTPException(status_code=404, detail="Analyse APEX-30 non disponible pour ce match")
+        from services.prediction_service import PredictionService
+        prediction_service = PredictionService(db)
+        # Forcer la génération ou mise à jour pour avoir les données APEX-30
+        try:
+            # On supprime l'ancienne prédiction sans analyse pour forcer la regénération
+            if prediction:
+                db.delete(prediction)
+                db.commit()
+            
+            prediction = await prediction_service.generate_prediction(match)
+        except Exception as e:
+            print(f"Erreur lors de la regénération auto de la prédiction: {e}")
+    
+    if not prediction or not prediction.ma_logique_analysis:
+        raise HTTPException(status_code=404, detail="Analyse APEX-30 non disponible pour ce match malgré une tentative de génération.")
     
     import json
     from services.apex30_service import APEX30Service
