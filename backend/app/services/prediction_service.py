@@ -12,6 +12,9 @@ from models.match import Match
 from models.prediction import ExpertPrediction
 from services.football_api import football_data_service
 from services.api_football import api_football_service
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 class PredictionService:
@@ -1220,14 +1223,25 @@ class PredictionService:
         """
         from datetime import datetime, timezone
         
+        # Utiliser une date naïve en UTC pour PostgreSQL si la colonne est naïve
+        now = datetime.now(timezone.utc).replace(tzinfo=None)
+        
+        # Log pour diagnostic
+        logger.info(f"🔍 Recherche de matchs après {now} avec statuts SCHEDULED, TIMED, CALENDAR")
+        
         # Matchs à venir sans prédiction
-        matches = self.db.query(Match).filter(
-            Match.match_date > datetime.now(timezone.utc),
-            Match.status.in_(["SCHEDULED", "TIMED"]),
+        # On inclut CALENDAR car certaines API l'utilisent
+        matches_query = self.db.query(Match).filter(
+            Match.match_date > now,
+            Match.status.in_(["SCHEDULED", "TIMED", "CALENDAR"]),
             ~Match.id.in_(
                 self.db.query(ExpertPrediction.match_id)
             )
-        ).order_by(Match.match_date).limit(limit).all()
+        ).order_by(Match.match_date)
+        
+        matches = matches_query.limit(limit).all()
+        
+        logger.info(f"🏟️ {len(matches)} matchs trouvés pour prédiction")
         
         count = 0
         for match in matches:
