@@ -479,6 +479,18 @@ class APEX30Service:
 
 
 # Fonction utilitaire pour créer les données à partir de nos modèles
+def creer_h2h_stats(h2h_data: Dict) -> H2HStats:
+    """
+    Crée un objet H2HStats à partir des données brutes
+    """
+    return H2HStats(
+        victoires_a=h2h_data.get('home_wins', 0),
+        nuls=h2h_data.get('draws', 0),
+        victoires_b=h2h_data.get('away_wins', 0),
+        derniers_gagnants=h2h_data.get('recent_winners', [])
+    )
+
+
 def creer_equipe_analyse(
     nom: str,
     matchs_recents: List[Dict],
