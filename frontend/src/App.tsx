@@ -6,6 +6,9 @@
  * - /today            : Matchs du jour (terminés, en cours, à venir)
  * - /matches/:id      : Détail d'un match avec prédiction
  * - /standings/:comp  : Classements par compétition
+ * - /login            : Connexion utilisateur
+ * - /register         : Inscription utilisateur
+ * - /profile          : Profil utilisateur
  */
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import Header from './components/layout/Header';
@@ -15,6 +18,9 @@ import SureMatch from './pages/SureMatch';
 import History from './pages/History';
 import MatchDetail from './pages/MatchDetail';
 import Standings from './pages/Standings';
+import Login from './pages/Login';
+import Register from './pages/Register';
+import Profile from './pages/Profile';
 import './index.css';
 
 function App() {
@@ -32,6 +38,10 @@ function App() {
             <Route path="/matches/:id" element={<MatchDetail />} />
             <Route path="/standings" element={<Standings />} />
             <Route path="/standings/:competition" element={<Standings />} />
+            {/* Auth Routes */}
+            <Route path="/login" element={<Login />} />
+            <Route path="/register" element={<Register />} />
+            <Route path="/profile" element={<Profile />} />
           </Routes>
         </main>
         

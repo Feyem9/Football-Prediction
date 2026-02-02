@@ -40,53 +40,119 @@ export default function SureMatch() {
           { type: 'exact', title: 'Score Exact', icon: '🎯', match: null, prediction: null, explanation: '' },
         ];
         
-        // Filtrer uniquement les matchs du jour
+        // Filtrer les matchs de la semaine (aujourd'hui + 6 jours)
         const today = new Date();
-        const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+        today.setHours(0, 0, 0, 0);
+        const endOfWeek = new Date(today);
+        endOfWeek.setDate(endOfWeek.getDate() + 7);
         
-        const todayMatches = data.matches.filter((m: Match) => {
+        const weekMatches = data.matches.filter((m: Match) => {
           const matchDate = new Date(m.match_date);
-          const matchDateStr = `${matchDate.getFullYear()}-${String(matchDate.getMonth() + 1).padStart(2, '0')}-${String(matchDate.getDate()).padStart(2, '0')}`;
-          return matchDateStr === todayStr;
+          return matchDate >= today && matchDate < endOfWeek;
         });
         
-        console.log(`📅 Matchs du jour (${todayStr}):`, todayMatches.length, 'sur', data.matches.length);
+        console.log(`📅 Matchs de la semaine (${today.toLocaleDateString('fr-FR')} → ${endOfWeek.toLocaleDateString('fr-FR')}):`, weekMatches.length, 'sur', data.matches.length);
         
-        for (const match of todayMatches) {
-          const conf = match.prediction?.confidence || 0;
+        for (const match of weekMatches) {
           const tip = match.prediction?.bet_tip || '';
           const homeScore = match.prediction?.home_score_forecast ?? 0;
           const awayScore = match.prediction?.away_score_forecast ?? 0;
+          const conf = match.prediction?.confidence || 0;
           
-          // Victoire Sûre - Match avec victoire claire
-          if (tip.includes('Victoire') && conf > 0.75) {
+          // Récupérer la prédiction combinée pour vérifier le consensus
+          let prediction: CombinedPrediction | null = null;
+          try {
+            prediction = await getCombinedPrediction(match.id);
+          } catch {
+            console.log(`⚠️ Pas de prédiction combinée pour ${match.home_team} vs ${match.away_team}`);
+          }
+          
+          // Vérifier si les 3 logiques sont d'accord sur le vainqueur
+          const allAgree = prediction?.all_agree === true;
+          
+          // Calculer les probabilités de victoire depuis les 3 logiques
+          const papaWinProb = prediction?.papa_prediction?.home_win_prob || prediction?.papa_prediction?.away_win_prob || 0;
+          const gfWinProb = prediction?.grand_frere_prediction?.home_win_prob || prediction?.grand_frere_prediction?.away_win_prob || 0;
+          const mlWinProb = prediction?.ma_logique_prediction?.home_win_prob || prediction?.ma_logique_prediction?.away_win_prob || 0;
+          
+          // Vérifier si les 3 logiques prédisent le même gagnant (1 = domicile, 2 = extérieur)
+          const papaPredictsHome = (prediction?.papa_prediction?.predicted_home_goals ?? 0) > (prediction?.papa_prediction?.predicted_away_goals ?? 0);
+          const gfPredictsHome = (prediction?.grand_frere_prediction?.predicted_home_goals ?? 0) > (prediction?.grand_frere_prediction?.predicted_away_goals ?? 0);
+          const mlPredictsHome = (prediction?.ma_logique_prediction?.predicted_home_goals ?? 0) > (prediction?.ma_logique_prediction?.predicted_away_goals ?? 0);
+          
+          const papaPredictsAway = (prediction?.papa_prediction?.predicted_away_goals ?? 0) > (prediction?.papa_prediction?.predicted_home_goals ?? 0);
+          const gfPredictsAway = (prediction?.grand_frere_prediction?.predicted_away_goals ?? 0) > (prediction?.grand_frere_prediction?.predicted_home_goals ?? 0);
+          const mlPredictsAway = (prediction?.ma_logique_prediction?.predicted_away_goals ?? 0) > (prediction?.ma_logique_prediction?.predicted_home_goals ?? 0);
+          
+          // Les 3 logiques d'accord sur le vainqueur
+          const threeAgreeOnHome = papaPredictsHome && gfPredictsHome && mlPredictsHome;
+          const threeAgreeOnAway = papaPredictsAway && gfPredictsAway && mlPredictsAway;
+          const threeAgreeOnWinner = threeAgreeOnHome || threeAgreeOnAway;
+          
+          // Moyenne des probabilités de victoire
+          const avgWinProb = (papaWinProb + gfWinProb + mlWinProb) / 3;
+          
+          console.log(`🔍 ${match.home_team} vs ${match.away_team}: allAgree=${allAgree}, threeAgreeOnWinner=${threeAgreeOnWinner}, avgWinProb=${(avgWinProb * 100).toFixed(0)}%`);
+          
+          // ===== 1. VICTOIRE SÛRE =====
+          // Critères: Proba victoire > 80% ET les 3 logiques prédisent le même gagnant
+          if (tip.includes('Victoire') && threeAgreeOnWinner && avgWinProb >= 0.60) {
             const cat = newCategories.find(c => c.type === 'victory');
-            if (cat && (!cat.match || conf > (cat.match.prediction?.confidence || 0))) {
+            if (cat && (!cat.match || avgWinProb > ((cat.match.prediction?.confidence || 0)))) {
               cat.match = match;
+              cat.prediction = prediction;
             }
           }
           
-          // Nombre de Buts - Plus/Moins 2.5
-          if ((tip.includes('Plus de 2.5') || tip.includes('Moins de 2.5')) && conf > 0.6) {
+          // ===== 2. NOMBRE DE BUTS =====
+          // Critères: Basé sur les statistiques des équipes (moyenne de buts)
+          const homeAvgGoals = prediction?.papa_prediction?.evidence?.home_avg_goals as number || 1.3;
+          const awayAvgGoals = prediction?.papa_prediction?.evidence?.away_avg_goals as number || 1.2;
+          const totalAvgGoals = homeAvgGoals + awayAvgGoals;
+          
+          // Over 2.5 si les deux équipes marquent beaucoup (total > 2.5)
+          // Under 2.5 si les deux équipes marquent peu (total < 2.5)
+          const isHighScoring = totalAvgGoals >= 2.5;
+          const predictedTotal = homeScore + awayScore;
+          
+          if ((isHighScoring && predictedTotal >= 3) || (!isHighScoring && predictedTotal <= 2)) {
             const cat = newCategories.find(c => c.type === 'goals');
-            if (cat && (!cat.match || conf > (cat.match.prediction?.confidence || 0))) {
+            // Priorité aux matchs avec plus grande différence vs ligne 2.5
+            const goalsScore = isHighScoring ? totalAvgGoals : (5 - totalAvgGoals); // Plus c'est loin de 2.5, mieux c'est
+            if (cat && (!cat.match || goalsScore > ((cat.prediction?.papa_prediction?.evidence?.home_avg_goals as number || 0) + (cat.prediction?.papa_prediction?.evidence?.away_avg_goals as number || 0)))) {
               cat.match = match;
+              cat.prediction = prediction;
             }
           }
           
-          // Match Nul - homeScore === awayScore
-          if (homeScore === awayScore && conf > 0.5) {
+          // ===== 3. MATCH NUL =====
+          // Critères: Score prédit égal ET consensus sur le nul
+          const papaPredictsNul = (prediction?.papa_prediction?.predicted_home_goals ?? 0) === (prediction?.papa_prediction?.predicted_away_goals ?? 0);
+          const gfPredictsNul = (prediction?.grand_frere_prediction?.predicted_home_goals ?? 0) === (prediction?.grand_frere_prediction?.predicted_away_goals ?? 0);
+          const mlPredictsNul = (prediction?.ma_logique_prediction?.predicted_home_goals ?? 0) === (prediction?.ma_logique_prediction?.predicted_away_goals ?? 0);
+          const multipleAgreeNul = [papaPredictsNul, gfPredictsNul, mlPredictsNul].filter(Boolean).length >= 2;
+          
+          if (homeScore === awayScore && multipleAgreeNul) {
             const cat = newCategories.find(c => c.type === 'draw');
             if (cat && (!cat.match || conf > (cat.match.prediction?.confidence || 0))) {
               cat.match = match;
+              cat.prediction = prediction;
             }
           }
           
-          // Score Exact - Haute confiance
-          if (conf > 0.8) {
+          // ===== 4. SCORE EXACT =====
+          // Critères: Les 3 logiques prédisent EXACTEMENT le même score
+          const papaScore = `${prediction?.papa_prediction?.predicted_home_goals}-${prediction?.papa_prediction?.predicted_away_goals}`;
+          const gfScore = `${prediction?.grand_frere_prediction?.predicted_home_goals}-${prediction?.grand_frere_prediction?.predicted_away_goals}`;
+          const mlScore = `${prediction?.ma_logique_prediction?.predicted_home_goals}-${prediction?.ma_logique_prediction?.predicted_away_goals}`;
+          
+          const allPredictSameScore = papaScore === gfScore && gfScore === mlScore && papaScore !== 'undefined-undefined';
+          
+          if (allPredictSameScore) {
             const cat = newCategories.find(c => c.type === 'exact');
             if (cat && (!cat.match || conf > (cat.match.prediction?.confidence || 0))) {
               cat.match = match;
+              cat.prediction = prediction;
             }
           }
         }
@@ -95,20 +161,12 @@ export default function SureMatch() {
         console.log('🏆 Catégories après sélection:', newCategories.map(c => ({
           type: c.type,
           hasMatch: !!c.match,
-          matchName: c.match ? `${c.match.home_team} vs ${c.match.away_team}` : null
+          matchName: c.match ? `${c.match.home_team} vs ${c.match.away_team}` : null,
+          allAgree: c.prediction?.all_agree,
+          consensus: c.prediction?.consensus_level
         })));
         
-        // Récupérer les prédictions détaillées
-        for (const cat of newCategories) {
-          if (cat.match) {
-            try {
-              cat.prediction = await getCombinedPrediction(cat.match.id);
-              console.log(`✅ Prediction loaded for ${cat.type}`);
-            } catch (err) {
-              console.error(`❌ Error loading prediction for ${cat.type}:`, err);
-            }
-          }
-        }
+        // On ne récupère plus les prédictions ici car on les a déjà récupérées dans la boucle
         
         setCategories(newCategories);
       } catch (err) {
@@ -149,9 +207,9 @@ export default function SureMatch() {
         <div className="relative container mx-auto px-4 text-center">
           <span className="text-5xl mb-4 block">🎯</span>
           <h1 className="text-3xl md:text-5xl font-black text-white mb-2">
-            Matchs <span className="text-yellow-400">Sûrs</span> du Jour
+            Matchs <span className="text-yellow-400">Sûrs</span> de la Semaine
           </h1>
-          <p className="text-slate-400 capitalize">{today}</p>
+          <p className="text-slate-400">Du {today} au {new Date(Date.now() + 7*24*60*60*1000).toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })}</p>
         </div>
       </div>
 
@@ -211,10 +269,21 @@ function SureMatchCard({ category }: { category: SureMatchCategory }) {
     <div className="space-y-8">
       {/* Match Card */}
       <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-yellow-900/30 via-slate-900 to-slate-900 border-2 border-yellow-500/50 p-8">
-        <div className="absolute top-4 right-4">
-          <div className="px-4 py-2 rounded-full bg-yellow-500 text-black font-black text-lg">
-            {Math.round((pred?.confidence || 0) * 100)}% SÛR
-          </div>
+        <div className="absolute top-4 right-4 flex flex-col items-end gap-2">
+          {/* Badge Consensus */}
+          {prediction?.all_agree ? (
+            <div className="px-4 py-2 rounded-full bg-green-500 text-black font-black text-lg animate-pulse">
+              ✨ 3/3 D'ACCORD
+            </div>
+          ) : prediction?.consensus_level === 'FORT' ? (
+            <div className="px-4 py-2 rounded-full bg-yellow-500 text-black font-black text-lg">
+              🎯 CONSENSUS FORT
+            </div>
+          ) : (
+            <div className="px-4 py-2 rounded-full bg-slate-600 text-white font-bold">
+              {Math.round((pred?.confidence || 0) * 100)}%
+            </div>
+          )}
         </div>
 
         <div className="text-center mb-4">

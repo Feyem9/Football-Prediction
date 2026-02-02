@@ -30,7 +30,7 @@ interface MatchSuccess {
   goals: boolean;
 }
 
-const API_BASE = import.meta.env.VITE_API_URL || 'https://football-prediction-mbil.onrender.com/api/v1';
+const API_BASE = `${import.meta.env.VITE_API_URL || 'https://football-prediction-mbil.onrender.com'}/api/v1`;
 
 const COMP_FLAGS: Record<string, string> = {
   PL: '🏴󠁧󠁢󠁥󠁮󠁧󠁿', FL1: '🇫🇷', BL1: '🇩🇪', SA: '🇮🇹', PD: '🇪🇸', CL: '🏆', EL: '🏆',
