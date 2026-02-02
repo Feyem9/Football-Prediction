@@ -6,7 +6,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from typing import Optional
 
-from database import get_db
+from core.database import get_db
 from services.precision_journal import PrecisionJournal
 
 

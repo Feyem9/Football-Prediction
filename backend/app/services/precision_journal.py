@@ -7,11 +7,11 @@ pour calculer le taux de réussite du système APEX-30.
 from datetime import datetime, timedelta
 from sqlalchemy.orm import Session
 from sqlalchemy import and_
-from typing import List, Dict, Optional
+from typing import List, Dict
 import json
 
 from models.match import Match
-from models.prediction import Prediction
+from models.prediction import ExpertPrediction as Prediction
 
 
 class PrecisionJournal:
