@@ -437,7 +437,7 @@ async def get_apex30_report(db: Session, match_id: int) -> Apex30FullReport:
         
         summary = (
             f"Analyse APEX-30 pour {match.home_team} vs {match.away_team}. "
-            f"Basée sur 8 modules pondérés. Confiance: {int(prediction.ma_logique_confidence * 100)}%."
+            f"Basée sur 10 modules pondérés (v2.0). Confiance: {int(prediction.ma_logique_confidence * 100)}%."
         )
         
         return Apex30FullReport(

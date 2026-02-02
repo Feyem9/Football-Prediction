@@ -867,7 +867,7 @@ class PredictionService:
         gf_confidence = min(0.8, 0.4 + abs(home_h2h - away_h2h))
         gf_tip = self._generate_bet_tip(gf_home_score, gf_away_score, gf_confidence)
         
-        # === MA LOGIQUE (APEX-30: Système 8 modules) ===
+        # === MA LOGIQUE (APEX-30 v2.0: Système 10 modules) ===
         # Remplacé par APEX-30: IFP, Force Off/Def, Domicile, Fatigue, Motivation, Absences, H2H
         from services.apex30_service import APEX30Service, creer_equipe_analyse, creer_h2h_stats, MatchHistorique
         

@@ -73,6 +73,13 @@ export default function RadarChart({ modules, homeTeam, awayTeam }: RadarChartPr
     if (id === 'absences') {
       return Math.max(0, Math.min(10, (value + 1.5) * 4)); // -1.5 à 0 -> 0-6
     }
+    // NOUVEAUX MODULES v2.0
+    if (id === 'xg_simule') {
+      return Math.max(0, Math.min(10, (value + 0.5) * 10)); // -0.5 à 0.5 -> 0-10
+    }
+    if (id === 'tendance_recente') {
+      return Math.max(0, Math.min(10, (value + 0.8) * 6.25)); // -0.8 à 0.8 -> 0-10
+    }
     return Math.max(0, Math.min(10, value * 5)); // Par défaut
   };
 
@@ -178,20 +185,22 @@ export default function RadarChart({ modules, homeTeam, awayTeam }: RadarChartPr
         <Radar data={data} options={options} />
       </div>
       
-      {/* Légende des modules */}
-      <div className="mt-6 grid grid-cols-2 md:grid-cols-4 gap-3">
-        {modules.slice(0, 8).map((mod) => (
+      {/* Légende des modules (10 modules v2.0) */}
+      <div className="mt-6 grid grid-cols-2 md:grid-cols-5 gap-2">
+        {modules.slice(0, 10).map((mod) => (
           <div 
             key={mod.id}
             className="bg-slate-700/30 rounded-lg p-2 text-center hover:bg-slate-600/40 transition-colors"
           >
-            <div className="text-xs font-medium text-slate-400">{mod.nom.split(' ')[0]}</div>
-            <div className="flex justify-center gap-2 mt-1">
-              <span className="text-green-400 font-bold text-sm">
+            <div className="text-xs font-medium text-slate-400 truncate" title={mod.nom}>
+              {mod.nom.split(' ')[0]}
+            </div>
+            <div className="flex justify-center gap-1 mt-1">
+              <span className="text-green-400 font-bold text-xs">
                 {normalizeValue(mod.home_val, mod.id).toFixed(1)}
               </span>
-              <span className="text-slate-500">vs</span>
-              <span className="text-red-400 font-bold text-sm">
+              <span className="text-slate-500 text-xs">vs</span>
+              <span className="text-red-400 font-bold text-xs">
                 {normalizeValue(mod.away_val, mod.id).toFixed(1)}
               </span>
             </div>

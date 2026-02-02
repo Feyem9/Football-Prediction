@@ -82,10 +82,24 @@ Ce document retrace toutes les étapes clés du développement de la plateforme 
 | Amélioration             | Description                                                     | Status |
 | ------------------------ | --------------------------------------------------------------- | ------ |
 | **Module Absences**      | Intégration blessures/suspensions dans APEX-30 via API-Football | ✅     |
-| **RadarChart**           | Graphique radar Chart.js pour visualiser les 8 modules APEX-30  | ✅     |
+| **RadarChart**           | Graphique radar Chart.js pour visualiser les 10 modules APEX-30 | ✅     |
 | **Journal de Précision** | Service de vérification automatique des prédictions             | ✅     |
 | **Migration DB**         | Colonnes verified, winner_correct, score_correct ajoutées       | ✅     |
 | **API Précision**        | Endpoints /precision/verify/yesterday et /precision/stats       | ✅     |
+| **APEX-30 v2.0**         | Upgrade de 8 à 10 modules avec xG Simulé + Tendance Récente     | ✅     |
+
+#### **APEX-30 v2.0 - Nouveaux Modules**
+
+| Module      | Poids | Description                                   |
+| ----------- | ----- | --------------------------------------------- |
+| xG Simulé   | 7%    | Estime si l'équipe sur/sous-performe sa norme |
+| Tendance 3M | 5%    | Détecte les séries en cours (🔥 ou ⚠️)        |
+
+**Poids rééquilibrés** selon le guide d'amélioration APEX-30:
+
+- IFP: 25% → 20% (car Tendance Récente prend le relais sur la forme court terme)
+- Facteur Domicile: 10% → 12% (très prédictif statistiquement)
+- Total = 100% (vérifié)
 
 ---
 

@@ -2,7 +2,7 @@
 APEX-30 Service - Intégration du Système Professionnel de Pronostic
 Adapté pour Pronoscore à partir du système original APEX-30
 
-Ce service remplace "Ma Logique" avec une approche scientifique basée sur 8 modules.
+Ce service remplace "Ma Logique" avec une approche scientifique basée sur 10 modules (v2.0).
 """
 
 from typing import Dict, List, Optional, Tuple
@@ -64,20 +64,28 @@ class H2HStats:
 
 class APEX30Service:
     """
-    Service APEX-30 adapté pour Pronoscore
-    Analyse les matchs selon 8 modules pondérés
+    Service APEX-30 v2.0 adapté pour Pronoscore
+    Analyse les matchs selon 10 modules pondérés
+    
+    Améliorations v2.0:
+    - Ajout module xG simulé (Expected Goals)
+    - Ajout module Tendance récente (3 derniers matchs)
+    - Rééquilibrage des poids selon analyse de performance
     """
     
-    # Coefficients de pondération (total = 1.0)
+    # Coefficients de pondération v2.0 (total = 1.0)
+    # Optimisés selon les recommandations du guide d'amélioration APEX-30
     POIDS = {
-        'ifp': 0.25,                # Indice de Forme Pondéré
-        'force_offensive': 0.15,    # Force offensive
-        'solidite_defensive': 0.15, # Solidité défensive
-        'facteur_domicile': 0.10,   # Avantage domicile
+        'ifp': 0.20,                # Indice de Forme Pondéré (réduit car tendance_recente prend le relais)
+        'force_offensive': 0.12,    # Force offensive
+        'solidite_defensive': 0.12, # Solidité défensive
+        'facteur_domicile': 0.12,   # Avantage domicile (augmenté - très prédictif)
         'fatigue': 0.05,            # Fatigue (calendrier)
-        'motivation': 0.15,         # Enjeu et motivation
-        'absences': 0.05,           # Impact absences (simplifié)
-        'h2h': 0.10                 # Historique H2H
+        'motivation': 0.13,         # Enjeu et motivation (légèrement réduit)
+        'absences': 0.06,           # Impact absences
+        'h2h': 0.08,                # Historique H2H
+        'xg_simule': 0.07,          # NOUVEAU: Expected Goals simulé
+        'tendance_recente': 0.05    # NOUVEAU: Tendance 3 derniers matchs
     }
     
     def __init__(self, db: Session):
@@ -149,7 +157,7 @@ class APEX30Service:
         }
     
     def _analyser_equipe(self, equipe: EquipeAnalyse, injuries: List[Dict] = None) -> Dict[str, float]:
-        """Analyse complète d'une équipe"""
+        """Analyse complète d'une équipe (10 modules v2.0)"""
         scores = {}
         
         # Module 1: IFP (Indice de Forme Pondéré)
@@ -171,6 +179,12 @@ class APEX30Service:
         
         # Module 6: Absences (blessures/suspensions)
         scores['absences'] = self._calculer_absences(equipe, injuries)
+        
+        # Module 9: xG Simulé (Expected Goals)
+        scores['xg_simule'] = self._calculer_xg_simule(equipe)
+        
+        # Module 10: Tendance Récente (Momentum)
+        scores['tendance_recente'] = self._calculer_tendance_recente(equipe)
         
         return scores
     
@@ -220,6 +234,133 @@ class APEX30Service:
         self._log(f"Absences {equipe.nom}: {malus:.2f} ({nb_blesses} blessés)")
         
         return malus
+    
+    def _calculer_xg_simule(self, equipe: EquipeAnalyse) -> float:
+        """
+        Module 9: Expected Goals (xG) Simulé
+        
+        Estime la qualité des occasions créées en comparant:
+        - Buts marqués vs moyenne de tirs
+        - Efficacité offensive
+        
+        Un xG positif signifie que l'équipe surperforme (bonne finition)
+        Un xG négatif signifie que l'équipe sous-performe (mauvaise finition)
+        """
+        if not equipe.matchs_historique:
+            return 0.0
+        
+        matchs = equipe.matchs_historique[:10]
+        total_buts = 0
+        total_matchs = len(matchs)
+        
+        for match in matchs:
+            total_buts += match.buts_pour
+        
+        if total_matchs == 0:
+            return 0.0
+        
+        # Moyenne de buts par match
+        moy_buts = total_buts / total_matchs
+        
+        # xG attendu selon le niveau de l'équipe (basé sur classement)
+        # Équipe top 5: ~2.0 xG/match attendu
+        # Équipe milieu: ~1.2 xG/match attendu
+        # Équipe bas: ~0.8 xG/match attendu
+        if equipe.classement_actuel <= 5:
+            xg_attendu = 2.0
+        elif equipe.classement_actuel <= 10:
+            xg_attendu = 1.5
+        elif equipe.classement_actuel <= 15:
+            xg_attendu = 1.2
+        else:
+            xg_attendu = 0.9
+        
+        # Différence xG réel vs attendu
+        diff_xg = moy_buts - xg_attendu
+        
+        # Normaliser sur échelle -0.5 à +0.5
+        score_xg = max(-0.5, min(0.5, diff_xg * 0.4))
+        
+        if score_xg > 0.2:
+            msg = "surperforme (finition excellente)"
+        elif score_xg > 0:
+            msg = "légèrement au-dessus"
+        elif score_xg > -0.2:
+            msg = "dans la norme"
+        else:
+            msg = "sous-performe (doit améliorer finition)"
+        
+        self._log(f"xG Simulé {equipe.nom}: {score_xg:+.2f} ({msg})")
+        
+        return score_xg
+    
+    def _calculer_tendance_recente(self, equipe: EquipeAnalyse) -> float:
+        """
+        Module 10: Tendance Récente (Momentum)
+        
+        Analyse les 3 DERNIERS matchs uniquement pour capturer le momentum.
+        Plus fiable que l'IFP car il détecte les équipes en feu.
+        
+        Calcule:
+        - Série en cours (victoires/défaites consécutives)
+        - Évolution de la forme (en hausse, stable, en baisse)
+        """
+        if not equipe.matchs_historique or len(equipe.matchs_historique) < 3:
+            return 0.0
+        
+        # 3 derniers matchs seulement
+        derniers_3 = equipe.matchs_historique[:3]
+        
+        score_momentum = 0
+        victoires_consecutives = 0
+        defaites_consecutives = 0
+        
+        for i, match in enumerate(derniers_3):
+            poids = 1.3 if i == 0 else (1.1 if i == 1 else 1.0)  # Match le plus récent = plus important
+            
+            if match.resultat == 'V':
+                score_momentum += 0.3 * poids
+                if i == 0:
+                    victoires_consecutives = 1
+                    # Vérifier séries
+                    for j in range(1, len(derniers_3)):
+                        if derniers_3[j].resultat == 'V':
+                            victoires_consecutives += 1
+                        else:
+                            break
+            elif match.resultat == 'D':
+                score_momentum -= 0.3 * poids
+                if i == 0:
+                    defaites_consecutives = 1
+                    for j in range(1, len(derniers_3)):
+                        if derniers_3[j].resultat == 'D':
+                            defaites_consecutives += 1
+                        else:
+                            break
+            # Nul = neutre
+        
+        # Bonus/Malus pour séries
+        if victoires_consecutives >= 3:
+            score_momentum += 0.4  # Série de feu!
+            msg = "🔥 SÉRIE DE FEU (3V+)"
+        elif victoires_consecutives >= 2:
+            score_momentum += 0.2
+            msg = "En forme (2V consécutives)"
+        elif defaites_consecutives >= 3:
+            score_momentum -= 0.4  # Crise!
+            msg = "⚠️ CRISE (3D+)"
+        elif defaites_consecutives >= 2:
+            score_momentum -= 0.2
+            msg = "En difficulté (2D consécutives)"
+        else:
+            msg = "Forme stable"
+        
+        # Plafonner
+        score_momentum = max(-0.8, min(0.8, score_momentum))
+        
+        self._log(f"Tendance Récente {equipe.nom}: {score_momentum:+.2f} ({msg})")
+        
+        return score_momentum
     
     def _calculer_ifp(self, equipe: EquipeAnalyse) -> float:
         """
@@ -548,7 +689,7 @@ class APEX30Service:
             {
                 'id': 'ifp',
                 'nom': 'Indice de Forme Pondéré (IFP)',
-                'poids': 25,
+                'poids': 20,
                 'home_val': home_scores.get('ifp', 0),
                 'away_val': away_scores.get('ifp', 0),
                 'description': "Analyse la dynamique sur les 10 derniers matchs. Les victoires contre des équipes du Top 10 valent 1.3x plus que contre le bas de tableau."
@@ -556,7 +697,7 @@ class APEX30Service:
             {
                 'id': 'force_offensive',
                 'nom': 'Force Offensive',
-                'poids': 15,
+                'poids': 12,
                 'home_val': home_scores.get('force_offensive', 0),
                 'away_val': away_scores.get('force_offensive', 0),
                 'description': "Capacité à créer des occasions franches. Ce module pondère les buts marqués par le niveau de la défense adverse rencontrée."
@@ -564,7 +705,7 @@ class APEX30Service:
             {
                 'id': 'solidite_defensive',
                 'nom': 'Solidité Défensive',
-                'poids': 15,
+                'poids': 12,
                 'home_val': home_scores.get('solidite_defensive', 0),
                 'away_val': away_scores.get('solidite_defensive', 0),
                 'description': "Évalue la résistance du bloc. Une note de 8.4/10 indique une défense hermétique qui encaisse moins de 0.8 buts par match."
@@ -572,7 +713,7 @@ class APEX30Service:
             {
                 'id': 'facteur_domicile',
                 'nom': 'Loi Domicile / Extérieur',
-                'poids': 10,
+                'poids': 12,
                 'home_val': home_scores.get('facteur_domicile', 0),
                 'away_val': away_scores.get('facteur_domicile', 0),
                 'description': "Certaines équipes surperforment devant leur public (+0.5). Ce module ajuste le score selon le ratio points Domicile/Extérieur."
@@ -588,7 +729,7 @@ class APEX30Service:
             {
                 'id': 'motivation',
                 'nom': 'Enjeu et Motivation',
-                'poids': 15,
+                'poids': 13,
                 'home_val': home_scores.get('motivation', 0),
                 'away_val': away_scores.get('motivation', 0),
                 'description': "Analyse situationnelle : lutte pour le titre, places européennes ou survie (maintien). Un bonus 'Survie' de +2.5 booste les outsiders."
@@ -596,7 +737,7 @@ class APEX30Service:
             {
                 'id': 'absences',
                 'nom': 'Impact Absences',
-                'poids': 5,
+                'poids': 6,
                 'home_val': home_scores.get('absences', 0),
                 'away_val': away_scores.get('absences', 0),
                 'description': "Pondère l'absence de joueurs cadres (capitaine, meilleur buteur) sur l'équilibre tactique global de l'équipe."
@@ -604,10 +745,26 @@ class APEX30Service:
             {
                 'id': 'h2h',
                 'nom': 'Historique H2H (Direct)',
-                'poids': 10,
+                'poids': 8,
                 'home_val': home_scores.get('h2h', 0),
                 'away_val': away_scores.get('h2h', 0),
                 'description': "Analyse l'ascendant psychologique historique. Une équipe qui reste sur 3 victoires en face-à-face reçoit un bonus de supériorité."
+            },
+            {
+                'id': 'xg_simule',
+                'nom': 'xG Simulé (Expected Goals)',
+                'poids': 7,
+                'home_val': home_scores.get('xg_simule', 0),
+                'away_val': away_scores.get('xg_simule', 0),
+                'description': "Estime si l'équipe surperforme ou sous-performe par rapport à son niveau attendu. Un score positif indique une finition efficace."
+            },
+            {
+                'id': 'tendance_recente',
+                'nom': 'Tendance Récente (Momentum)',
+                'poids': 5,
+                'home_val': home_scores.get('tendance_recente', 0),
+                'away_val': away_scores.get('tendance_recente', 0),
+                'description': "Capture le momentum des 3 derniers matchs. Détecte les séries de victoires (🔥) ou les crises (⚠️) en cours."
             }
         ]
         
@@ -627,16 +784,14 @@ class APEX30Service:
             elif mod['id'] == 'force_offensive':
                 if h > 2.0:
                     mod['analyse'] = f"L'attaque de {home_name} est en surchauffe, capable de percer n'importe quel bloc actuel."
-                elif h > a + 0.5:
-                    mod['analyse'] = f"Supériorité offensive notable pour {home_name} qui génère plus de danger réel devant le but."
+                elif a > 2.0:
+                    mod['analyse'] = f"{away_name} possède un potentiel offensif dévastateur, régulièrement en capacité de marquer plusieurs fois."
                 else:
-                    mod['analyse'] = "Équilibre offensif entre les deux formations."
-                    
+                    mod['analyse'] = "Potentiel offensif comparable entre les deux formations."
+            
             elif mod['id'] == 'solidite_defensive':
-                if h > 8.0 and a < 5.0:
-                    mod['analyse'] = f"Gros écart défensif : {home_name} est une forteresse tandis que {away_name} montre des lacunes inquiétantes."
-                elif h > 7.0:
-                    mod['analyse'] = f"Sûreté défensive validée pour {home_name} qui concède très peu d'occasions franches."
+                if h > 7 or a > 7:
+                    mod['analyse'] = f"Sûreté défensive validée pour {home_name if h > a else away_name} qui concède très peu d'occasions franches."
                 else:
                     mod['analyse'] = "Le match pourrait s'ouvrir suite à des approximations défensives de part et d'autre."
             
@@ -645,6 +800,27 @@ class APEX30Service:
                     mod['analyse'] = "L'enjeu est colossal pour ce match (Titre ou Maintien), ce qui garantit une intensité maximale."
                 else:
                     mod['analyse'] = "Niveau de motivation standard pour un match de milieu de saison."
+            
+            elif mod['id'] == 'xg_simule':
+                if h > 0.2:
+                    mod['analyse'] = f"{home_name} fait preuve d'une efficacité redoutable devant le but, convertissant bien au-delà de la normale."
+                elif a > 0.2:
+                    mod['analyse'] = f"{away_name} surpasse son potentiel théorique avec une finition clinique."
+                elif h < -0.2 or a < -0.2:
+                    mod['analyse'] = "Une des deux équipes gaspille des occasions claires et devra améliorer sa finition."
+                else:
+                    mod['analyse'] = "Les deux équipes convertissent leurs occasions de manière conforme à leur niveau."
+            
+            elif mod['id'] == 'tendance_recente':
+                if h > 0.6:
+                    mod['analyse'] = f"🔥 {home_name} est en série de victoires! Momentum très favorable."
+                elif a > 0.6:
+                    mod['analyse'] = f"🔥 {away_name} enchaîne les victoires et arrive avec une confiance maximale."
+                elif h < -0.4 or a < -0.4:
+                    team_in_crisis = home_name if h < -0.4 else away_name
+                    mod['analyse'] = f"⚠️ {team_in_crisis} traverse une crise de résultats inquiétante."
+                else:
+                    mod['analyse'] = "Les deux équipes affichent une forme récente stable."
             
             else:
                 if h > a:

@@ -273,7 +273,7 @@ class Apex30ModuleReport(BaseModel):
 
 
 class Apex30FullReport(BaseModel):
-    """Rapport complet APEX-30 avec les 8 modules détaillés."""
+    """Rapport complet APEX-30 v2.0 avec les 10 modules détaillés."""
     match_id: int
     home_team: str
     away_team: str
