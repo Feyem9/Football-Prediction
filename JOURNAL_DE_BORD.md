@@ -77,6 +77,16 @@ Ce document retrace toutes les étapes clés du développement de la plateforme 
 - ✅ Page Historique des prédictions
 - ✅ Page Matchs Sûrs avancée
 
+#### **2 Février - Session Soir : Améliorations Stratégiques**
+
+| Amélioration             | Description                                                     | Status |
+| ------------------------ | --------------------------------------------------------------- | ------ |
+| **Module Absences**      | Intégration blessures/suspensions dans APEX-30 via API-Football | ✅     |
+| **RadarChart**           | Graphique radar Chart.js pour visualiser les 8 modules APEX-30  | ✅     |
+| **Journal de Précision** | Service de vérification automatique des prédictions             | ✅     |
+| **Migration DB**         | Colonnes verified, winner_correct, score_correct ajoutées       | ✅     |
+| **API Précision**        | Endpoints /precision/verify/yesterday et /precision/stats       | ✅     |
+
 ---
 
 ## 🛠️ Notes Techniques Importantes

@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, ForeignKey, Float
+from sqlalchemy import Column, Integer, String, ForeignKey, Float, Boolean
 from sqlalchemy.orm import relationship
 from .base import Base
 
@@ -72,5 +72,11 @@ class ExpertPrediction(Base):
     gf_away_league_level = Column(Float, nullable=True)  # Niveau ligue équipe extérieur
     gf_home_advantage_bonus = Column(Float, nullable=True)  # Bonus domicile calculé
     gf_verdict = Column(String, nullable=True)  # Verdict Grand Frère (explication)
+    
+    # === Journal de Précision (Vérification après le match) ===
+    verified = Column(Boolean, default=False)  # True si la prédiction a été vérifiée
+    winner_correct = Column(Boolean, nullable=True)  # True si le vainqueur prédit est correct
+    score_correct = Column(Boolean, nullable=True)  # True si le score exact est correct
 
     match = relationship("Match", back_populates="expert_prediction")
+

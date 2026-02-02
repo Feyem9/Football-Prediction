@@ -5,6 +5,7 @@ import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { getMatch, getApex30Report } from '../lib/api';
 import type { Match, Apex30FullReport } from '../types';
+import RadarChart from '../components/predictions/RadarChart';
 
 export default function MatchDetail() {
   const { id } = useParams<{ id: string }>();
@@ -827,6 +828,13 @@ export default function MatchDetail() {
                       </p>
                     </div>
                   </div>
+
+                  {/* GRAPHIQUE RADAR - VISUALISATION APEX-30 */}
+                  <RadarChart 
+                    modules={apexReport.modules}
+                    homeTeam={match?.home_team || 'Domicile'}
+                    awayTeam={match?.away_team || 'Extérieur'}
+                  />
 
                   {/* Table header */}
                   <div className="hidden md:grid grid-cols-12 gap-4 px-4 py-2 text-[10px] font-bold text-slate-500 uppercase tracking-widest border-b border-slate-800">

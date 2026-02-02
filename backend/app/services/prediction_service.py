@@ -1065,9 +1065,30 @@ class PredictionService:
                 'recent_winners': h2h_data_apex.get('recent_winners', [])
             })
             
-            # Lancer l'analyse APEX-30
+            # Récupérer les blessures des deux équipes (Module Absences)
+            injuries_home = []
+            injuries_away = []
             try:
-                apex_result = apex30.analyser_match(equipe_home, equipe_away, apex_h2h)
+                from services.api_football import api_football_service
+                home_injuries_data = await api_football_service.get_team_injuries(match.home_team)
+                if home_injuries_data.get('success'):
+                    injuries_home = home_injuries_data.get('injuries', [])
+                    print(f"🏥 {match.home_team}: {len(injuries_home)} blessés")
+                
+                away_injuries_data = await api_football_service.get_team_injuries(match.away_team)
+                if away_injuries_data.get('success'):
+                    injuries_away = away_injuries_data.get('injuries', [])
+                    print(f"🏥 {match.away_team}: {len(injuries_away)} blessés")
+            except Exception as e:
+                print(f"⚠️ Impossible de récupérer les blessures: {e}")
+            
+            # Lancer l'analyse APEX-30 (avec blessures)
+            try:
+                apex_result = apex30.analyser_match(
+                    equipe_home, equipe_away, apex_h2h,
+                    injuries_a=injuries_home,
+                    injuries_b=injuries_away
+                )
                 
                 # Extraire les résultats
                 decision = apex_result['decision']

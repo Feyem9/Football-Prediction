@@ -88,23 +88,32 @@ class APEX30Service:
         self,
         equipe_a: EquipeAnalyse,
         equipe_b: EquipeAnalyse,
-        h2h: H2HStats
+        h2h: H2HStats,
+        injuries_a: List[Dict] = None,
+        injuries_b: List[Dict] = None
     ) -> Dict:
         """
         Analyse complète d'un match avec APEX-30
+        
+        Args:
+            equipe_a: Données de l'équipe domicile
+            equipe_b: Données de l'équipe extérieur
+            h2h: Statistiques des confrontations directes
+            injuries_a: Liste des blessures équipe domicile
+            injuries_b: Liste des blessures équipe extérieur
         
         Returns:
             Dictionnaire avec scores, prédiction et confiance
         """
         self.rapport = []
         
-        # Phase 1: Analyser équipe A
+        # Phase 1: Analyser équipe A (avec blessures)
         print(f"DEBUG APEX: Analysing {equipe_a.nom}...")
-        scores_a = self._analyser_equipe(equipe_a)
+        scores_a = self._analyser_equipe(equipe_a, injuries_a)
         
-        # Phase 2: Analyser équipe B
+        # Phase 2: Analyser équipe B (avec blessures)
         print(f"DEBUG APEX: Analysing {equipe_b.nom}...")
-        scores_b = self._analyser_equipe(equipe_b)
+        scores_b = self._analyser_equipe(equipe_b, injuries_b)
         
         # Phase 3: Analyser H2H
         print(f"DEBUG APEX: Analysing H2H...")
@@ -139,7 +148,7 @@ class APEX30Service:
             'rapport': '\n'.join(self.rapport)
         }
     
-    def _analyser_equipe(self, equipe: EquipeAnalyse) -> Dict[str, float]:
+    def _analyser_equipe(self, equipe: EquipeAnalyse, injuries: List[Dict] = None) -> Dict[str, float]:
         """Analyse complète d'une équipe"""
         scores = {}
         
@@ -160,10 +169,57 @@ class APEX30Service:
         # Module 5: Motivation
         scores['motivation'] = self._calculer_motivation(equipe)
         
-        # Module 6: Absences (simplifié - nous n'avons pas ces données)
-        scores['absences'] = 0  # Neutre par défaut
+        # Module 6: Absences (blessures/suspensions)
+        scores['absences'] = self._calculer_absences(equipe, injuries)
         
         return scores
+    
+    def _calculer_absences(self, equipe: EquipeAnalyse, injuries: List[Dict] = None) -> float:
+        """
+        Module 6: Impact des Absences (Blessures/Suspensions)
+        
+        Calcule l'impact négatif des joueurs absents sur l'équipe.
+        Plus il y a de joueurs clés absents, plus le malus est important.
+        """
+        if not injuries or len(injuries) == 0:
+            self._log(f"Absences {equipe.nom}: 0 (pas de blessures connues)")
+            return 0  # Neutre
+        
+        malus = 0
+        nb_blesses = len(injuries)
+        
+        for injury in injuries:
+            importance = injury.get('importance', 5)  # 1-10
+            poste = injury.get('poste', 'Joueur').lower()
+            
+            # Pondération selon le poste
+            if 'gardien' in poste or 'goalkeeper' in poste:
+                coef_poste = 1.5  # Gardien très important
+            elif 'attaquant' in poste or 'striker' in poste or 'forward' in poste:
+                coef_poste = 1.3  # Attaquant crucial
+            elif 'milieu' in poste or 'midfielder' in poste:
+                coef_poste = 1.1
+            else:
+                coef_poste = 1.0
+            
+            # Pondération selon l'importance (1-10)
+            coef_importance = importance / 10.0
+            
+            # Malus par joueur (max -0.3 par joueur clé)
+            malus -= (0.15 * coef_poste * coef_importance)
+        
+        # Malus global si beaucoup de blessés
+        if nb_blesses >= 5:
+            malus -= 0.3  # Beaucoup de blessés = équipe affaiblie
+        elif nb_blesses >= 3:
+            malus -= 0.15
+        
+        # Plafonner le malus à -1.5
+        malus = max(-1.5, malus)
+        
+        self._log(f"Absences {equipe.nom}: {malus:.2f} ({nb_blesses} blessés)")
+        
+        return malus
     
     def _calculer_ifp(self, equipe: EquipeAnalyse) -> float:
         """
