@@ -19,6 +19,7 @@ from api.v1.routes.matches import router as matches_router
 from api.v1.routes.teams import router as teams_router
 from api.v1.routes.admin import router as admin_router
 from routes.precision import router as precision_router
+from routes.odds import router as odds_router
 from core.scheduler import start_scheduler, stop_scheduler
 
 # Création des tables au démarrage (pour le développement)
@@ -150,6 +151,7 @@ app.include_router(matches_router, prefix="/api/v1", tags=["Matches"])
 app.include_router(teams_router, prefix="/api/v1", tags=["Teams"])
 app.include_router(admin_router, prefix="/api/v1", tags=["Admin"])
 app.include_router(precision_router, prefix="/api/v1", tags=["Precision"])
+app.include_router(odds_router, prefix="/api/v1", tags=["Odds"])
 
 
 @app.get("/", tags=["Health"])

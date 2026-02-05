@@ -1,5 +1,5 @@
 """Modèle Match enrichi pour stocker les données de Football-Data.org."""
-from sqlalchemy import Column, Integer, String, DateTime
+from sqlalchemy import Column, Integer, String, DateTime, Float
 from sqlalchemy.orm import relationship
 from datetime import datetime, timezone
 from .base import Base
@@ -47,6 +47,12 @@ class Match(Base):
     
     # Statut: SCHEDULED, TIMED, IN_PLAY, PAUSED, FINISHED, POSTPONED, CANCELLED
     status = Column(String(20), default="SCHEDULED", index=True)
+    
+    # === Cotes de Paris (The Odds API) ===
+    odds_home = Column(Float, nullable=True)    # Cote victoire domicile
+    odds_draw = Column(Float, nullable=True)    # Cote match nul
+    odds_away = Column(Float, nullable=True)    # Cote victoire extérieur
+    odds_updated_at = Column(DateTime, nullable=True)  # Dernière mise à jour des cotes
     
     # Métadonnées de synchronisation
     last_synced = Column(DateTime, default=lambda: datetime.now(timezone.utc))

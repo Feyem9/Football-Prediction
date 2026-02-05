@@ -44,6 +44,9 @@ class Settings(BaseSettings):
     # API-Football (RapidAPI) pour cartons et corners
     rapidapi_key: str = os.getenv("RAPIDAPI_KEY", "")
     
+    # The Odds API pour les cotes de paris
+    ODDS_API_KEY: str = os.getenv("ODDS_API_KEY", "")
+    
     model_config = SettingsConfigDict(env_file=".env", case_sensitive=False, extra="ignore")
 
 
