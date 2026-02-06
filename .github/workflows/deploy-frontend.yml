@@ -1,0 +1,65 @@
+# =============================================================================
+# PRONOSCORE - Déploiement Frontend vers Vercel
+# =============================================================================
+# Déclenché automatiquement lors d'un merge sur main ou production
+# =============================================================================
+
+name: 🚀 Deploy Frontend
+
+on:
+  push:
+    branches: [main, production]
+    paths:
+      - "frontend/**"
+      - ".github/workflows/deploy-frontend.yml"
+  workflow_dispatch: # Permet le déclenchement manuel
+
+jobs:
+  deploy:
+    name: 🚀 Deploy to Vercel
+    runs-on: ubuntu-latest
+    environment:
+      name: ${{ github.ref == 'refs/heads/production' && 'production' || 'preview' }}
+
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+
+      - name: 📦 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: 📦 Install dependencies
+        working-directory: ./frontend
+        run: npm ci
+
+      - name: 🏗️ Build
+        working-directory: ./frontend
+        env:
+          VITE_API_URL: https://football-prediction-mbil.onrender.com
+        run: npm run build
+
+      - name: 🚀 Deploy to Vercel
+        uses: amondnet/vercel-action@v25
+        with:
+          vercel-token: ${{ secrets.VERCEL_TOKEN }}
+          vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
+          vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
+          working-directory: ./frontend
+          vercel-args: ${{ github.ref == 'refs/heads/production' && '--prod' || '' }}
+
+      - name: 📢 Notify success
+        if: success()
+        run: |
+          echo "🎉 Frontend deployed successfully!"
+          echo "📅 Deployed at: $(date)"
+          echo "🔖 Commit: ${{ github.sha }}"
+
+      - name: 📢 Notify failure
+        if: failure()
+        run: |
+          echo "❌ Frontend deployment failed!"
+          echo "🔖 Commit: ${{ github.sha }}"

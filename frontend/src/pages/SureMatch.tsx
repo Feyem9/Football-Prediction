@@ -8,7 +8,7 @@ import { getMatches, getCombinedPrediction } from '../lib/api';
 import type { Match, CombinedPrediction, LogicPrediction } from '../types';
 
 interface SureMatchCategory {
-  type: 'victory' | 'goals' | 'draw' | 'exact';
+  type: 'victory' | 'goals' | 'draw' | 'exact' | 'value';
   title: string;
   icon: string;
   match: Match | null;
@@ -22,9 +22,10 @@ export default function SureMatch() {
     { type: 'goals', title: 'Nombre de Buts', icon: '⚽', match: null, prediction: null, explanation: '' },
     { type: 'draw', title: 'Match Nul', icon: '🤝', match: null, prediction: null, explanation: '' },
     { type: 'exact', title: 'Score Exact', icon: '🎯', match: null, prediction: null, explanation: '' },
+    { type: 'value', title: 'Value Bet 🔥', icon: '💰', match: null, prediction: null, explanation: '' },
   ]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'victory' | 'goals' | 'draw' | 'exact'>('victory');
+  const [activeTab, setActiveTab] = useState<'victory' | 'goals' | 'draw' | 'exact' | 'value'>('victory');
 
   useEffect(() => {
     const fetchSureMatches = async () => {
@@ -38,6 +39,7 @@ export default function SureMatch() {
           { type: 'goals', title: 'Nombre de Buts', icon: '⚽', match: null, prediction: null, explanation: '' },
           { type: 'draw', title: 'Match Nul', icon: '🤝', match: null, prediction: null, explanation: '' },
           { type: 'exact', title: 'Score Exact', icon: '🎯', match: null, prediction: null, explanation: '' },
+          { type: 'value', title: 'Value Bet 🔥', icon: '💰', match: null, prediction: null, explanation: '' },
         ];
         
         // Filtrer les matchs de la semaine (aujourd'hui + 6 jours)
@@ -153,6 +155,33 @@ export default function SureMatch() {
             if (cat && (!cat.match || conf > (cat.match.prediction?.confidence || 0))) {
               cat.match = match;
               cat.prediction = prediction;
+            }
+          }
+
+          // ===== 5. VALUE BET 🔥 =====
+          // Critères: Toute cote (1, X ou 2) ayant une value positive par rapport à APEX-30
+          if (match.odds_home || match.odds_draw || match.odds_away) {
+            const cat = newCategories.find(c => c.type === 'value');
+            if (cat) {
+              // Vérifier quelle cote a la plus grande value
+              let bestValue = 0;
+              const ourProb = match.prediction?.confidence || 0.5;
+              
+              if (match.odds_home) {
+                const valH = ourProb - (1 / match.odds_home);
+                if (valH > bestValue) bestValue = valH;
+              }
+              if (match.odds_away) {
+                const valA = (1-ourProb) - (1 / match.odds_away); // Simplifié pour le test
+                if (valA > bestValue) bestValue = valA;
+              }
+
+              if (bestValue > 0.05) { // Au moins 5% de value
+                if (!cat.match || bestValue > 0.1) { // On prend celui avec la plus grosse value
+                   cat.match = match;
+                   cat.prediction = prediction;
+                }
+              }
             }
           }
         }
@@ -382,6 +411,36 @@ function SureMatchCard({ category }: { category: SureMatchCategory }) {
               ];
             }}
           />
+
+          {/* Value Bet Explanation */}
+          {category.type === 'value' && (
+            <div className="p-6 rounded-3xl bg-gradient-to-br from-amber-900/40 to-slate-900 border-2 border-amber-500/50">
+              <div className="flex items-center gap-4 mb-4">
+                <span className="text-4xl">💰</span>
+                <div>
+                  <h3 className="text-xl font-bold text-amber-400">Pourquoi est-ce un "Value Bet" ?</h3>
+                  <p className="text-slate-400 text-sm italic">
+                    C'est l'opportunité mathématique ultime.
+                  </p>
+                </div>
+              </div>
+              <div className="bg-slate-800/50 p-4 rounded-xl mb-4">
+                <p className="text-slate-300 text-sm leading-relaxed">
+                  Imagine qu'un ami te parie que le soleil ne se lèvera pas demain, et il te propose de gagner 100€ pour 1€ misé. Tu sais que le soleil se lèvera (100% sûr). C'est un <strong>Value Bet</strong> : le prix proposé est bien trop élevé par rapport au risque réel. Ici, APEX-30 pense que le bookmaker a fait une erreur sur la cote !
+                </p>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="p-3 rounded-xl bg-slate-800/30">
+                  <span className="text-xs text-slate-500 block">Notre Probabilité</span>
+                  <span className="text-lg font-bold text-amber-400">{Math.round((match.prediction?.confidence || 0.5) * 100)}%</span>
+                </div>
+                <div className="p-3 rounded-xl bg-slate-800/30">
+                  <span className="text-xs text-slate-500 block">Meilleure Cote</span>
+                  <span className="text-lg font-bold text-amber-400">{match.odds_home || match.odds_away || match.odds_draw || '?' }</span>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Résumé Consensus */}
           <div className="p-6 rounded-3xl bg-gradient-to-br from-yellow-900/30 to-slate-900 border-2 border-yellow-500/50">

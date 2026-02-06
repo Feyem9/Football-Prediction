@@ -1,0 +1,70 @@
+# =============================================================================
+# PRONOSCORE - Protection de branche
+# =============================================================================
+# À appliquer manuellement dans GitHub Settings > Branches > Add rule
+# =============================================================================
+
+# Nom de la branche protégée: main (et production)
+
+# Règles recommandées:
+
+branch_protection:
+  # Branche main
+  main:
+    # Require pull request reviews before merging
+    required_pull_request_reviews:
+      required_approving_review_count: 1
+      dismiss_stale_reviews: true
+      require_code_owner_reviews: false
+
+    # Require status checks to pass before merging
+    required_status_checks:
+      strict: true # Require branches to be up to date before merging
+      contexts:
+        - "🐍 Backend Lint"
+        - "🧪 Backend Tests"
+        - "⚛️ Frontend Lint"
+        - "🏗️ Frontend Build"
+
+    # Do not allow bypassing the above settings
+    enforce_admins: true
+
+    # Require linear history (no merge commits)
+    required_linear_history: false
+
+    # Allow force pushes
+    allow_force_pushes: false
+
+    # Allow deletions
+    allow_deletions: false
+
+  # Branche production
+  production:
+    required_pull_request_reviews:
+      required_approving_review_count: 1
+      dismiss_stale_reviews: true
+    required_status_checks:
+      strict: true
+      contexts:
+        - "✅ CI Summary"
+    enforce_admins: true
+    allow_force_pushes: false
+    allow_deletions: false
+
+# =============================================================================
+# INSTRUCTIONS MANUELLES
+# =============================================================================
+#
+# 1. Va sur GitHub > ton repo > Settings > Branches
+# 2. Clique "Add branch protection rule"
+# 3. Branch name pattern: main
+# 4. Coche:
+#    ✅ Require a pull request before merging
+#    ✅ Require status checks to pass before merging
+#       - Cherche et ajoute: "🐍 Backend Lint", "🧪 Backend Tests", etc.
+#    ✅ Require branches to be up to date before merging
+#    ✅ Do not allow bypassing the above settings
+# 5. Clique "Create" / "Save changes"
+# 6. Répète pour la branche "production"
+#
+# =============================================================================

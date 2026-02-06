@@ -23,6 +23,11 @@ export interface Match {
   match_date: string;
   status: 'SCHEDULED' | 'TIMED' | 'IN_PLAY' | 'PAUSED' | 'FINISHED' | 'POSTPONED' | 'CANCELLED';
   prediction?: PredictionSummary;
+  // Cotes de paris (The Odds API)
+  odds_home?: number | null;
+  odds_draw?: number | null;
+  odds_away?: number | null;
+  odds_updated_at?: string | null;
 }
 
 export interface PredictionSummary {
@@ -189,4 +194,24 @@ export interface Apex30FullReport {
   away_team: string;
   modules: Apex30ModuleReport[];
   summary: string;
+}
+
+// Cotes de Paris - Value Bet
+export interface ValueBetResponse {
+  is_value_bet: boolean;
+  expected_value: number;
+  value_percentage: number;
+  implied_probability: number;
+  our_probability: number;
+  recommendation: string;
+}
+
+export interface OddsResponse {
+  match_id: number;
+  home_team: string;
+  away_team: string;
+  odds_home: number | null;
+  odds_draw: number | null;
+  odds_away: number | null;
+  odds_updated_at: string | null;
 }

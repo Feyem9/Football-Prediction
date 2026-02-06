@@ -126,7 +126,7 @@ export default function MatchCard({ match }: MatchCardProps) {
         {match.prediction && isScheduled && (
           <div className="flex items-center justify-center gap-4 pt-3 border-t border-slate-700/50">
             <div className="flex items-center gap-2">
-              <span className="text-yellow-500">��</span>
+              <span className="text-yellow-500">🎯</span>
               <span className="text-sm font-semibold text-yellow-400">
                 {match.prediction.bet_tip}
               </span>
@@ -142,6 +142,42 @@ export default function MatchCard({ match }: MatchCardProps) {
                 {Math.round(match.prediction.confidence * 100)}%
               </span>
             </div>
+          </div>
+        )}
+
+        {/* Cotes de Paris */}
+        {isScheduled && (match.odds_home || match.odds_draw || match.odds_away) && (
+          <div className="flex items-center justify-center gap-2 pt-3 mt-2 border-t border-slate-700/50">
+            <span className="text-xs text-slate-500 mr-2">Cotes:</span>
+            {match.odds_home && (
+              <span className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                match.prediction?.ma_logique_home_score && match.prediction?.ma_logique_away_score &&
+                match.prediction.ma_logique_home_score > match.prediction.ma_logique_away_score
+                  ? 'bg-green-500/20 text-green-400 border border-green-500/50'
+                  : 'bg-slate-700/50 text-slate-300'
+              }`}>
+                1: {match.odds_home.toFixed(2)}
+              </span>
+            )}
+            {match.odds_draw && (
+              <span className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                match.prediction?.ma_logique_home_score === match.prediction?.ma_logique_away_score
+                  ? 'bg-yellow-500/20 text-yellow-400 border border-yellow-500/50'
+                  : 'bg-slate-700/50 text-slate-300'
+              }`}>
+                X: {match.odds_draw.toFixed(2)}
+              </span>
+            )}
+            {match.odds_away && (
+              <span className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                match.prediction?.ma_logique_away_score && match.prediction?.ma_logique_home_score &&
+                match.prediction.ma_logique_away_score > match.prediction.ma_logique_home_score
+                  ? 'bg-blue-500/20 text-blue-400 border border-blue-500/50'
+                  : 'bg-slate-700/50 text-slate-300'
+              }`}>
+                2: {match.odds_away.toFixed(2)}
+              </span>
+            )}
           </div>
         )}
 

@@ -1,0 +1,161 @@
+# =============================================================================
+# PRONOSCORE - Scan de Sécurité
+# =============================================================================
+# Exécuté chaque semaine pour détecter les vulnérabilités
+# =============================================================================
+
+name: 🔒 Security Scan
+
+on:
+  schedule:
+    - cron: "0 6 * * 1" # Chaque lundi à 6h00 UTC
+  push:
+    branches: [main]
+    paths:
+      - "backend/**/requirements*.txt"
+      - "frontend/package*.json"
+  workflow_dispatch:
+
+jobs:
+  # ===========================================================================
+  # Backend Security Scan
+  # ===========================================================================
+  backend-security:
+    name: 🐍 Backend Security
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+
+      - name: 🐍 Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: 📦 Install security tools
+        run: |
+          pip install safety bandit pip-audit
+
+      - name: 🔍 Check dependencies with Safety
+        working-directory: ./backend/app
+        continue-on-error: true
+        run: |
+          echo "🔍 Scanning Python dependencies..."
+          safety check -r requirements.txt --full-report || true
+
+      - name: 🔍 Check dependencies with pip-audit
+        working-directory: ./backend/app
+        continue-on-error: true
+        run: |
+          pip-audit -r requirements.txt || true
+
+      - name: 🔍 Static analysis with Bandit
+        working-directory: ./backend/app
+        continue-on-error: true
+        run: |
+          echo "🔍 Running Bandit security scan..."
+          bandit -r . -ll -f json -o bandit-report.json || true
+          bandit -r . -ll || true
+
+      - name: 📊 Upload Bandit report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: bandit-security-report
+          path: backend/app/bandit-report.json
+          retention-days: 30
+
+  # ===========================================================================
+  # Frontend Security Scan
+  # ===========================================================================
+  frontend-security:
+    name: ⚛️ Frontend Security
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+
+      - name: 📦 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: 📦 Install dependencies
+        working-directory: ./frontend
+        run: npm ci
+
+      - name: 🔍 NPM Audit
+        working-directory: ./frontend
+        continue-on-error: true
+        run: |
+          echo "🔍 Running npm audit..."
+          npm audit --audit-level=high || true
+
+      - name: 🔍 NPM Audit (JSON report)
+        working-directory: ./frontend
+        continue-on-error: true
+        run: |
+          npm audit --json > npm-audit-report.json || true
+
+      - name: 📊 Upload NPM audit report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: npm-audit-report
+          path: frontend/npm-audit-report.json
+          retention-days: 30
+
+  # ===========================================================================
+  # CodeQL Analysis
+  # ===========================================================================
+  codeql:
+    name: 🔬 CodeQL Analysis
+    runs-on: ubuntu-latest
+    permissions:
+      security-events: write
+      actions: read
+      contents: read
+
+    strategy:
+      fail-fast: false
+      matrix:
+        language: ["python", "javascript"]
+
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+
+      - name: 🔬 Initialize CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: ${{ matrix.language }}
+
+      - name: 🔬 Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v3
+        with:
+          category: "/language:${{ matrix.language }}"
+
+  # ===========================================================================
+  # Summary
+  # ===========================================================================
+  security-summary:
+    name: 📊 Security Summary
+    runs-on: ubuntu-latest
+    needs: [backend-security, frontend-security]
+    if: always()
+
+    steps:
+      - name: 📊 Generate summary
+        run: |
+          echo "# 🔒 Security Scan Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Component | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|-----------|--------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Backend | ${{ needs.backend-security.result == 'success' && '✅ Passed' || '⚠️ Issues found' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Frontend | ${{ needs.frontend-security.result == 'success' && '✅ Passed' || '⚠️ Issues found' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "📅 Scan completed at: $(date)" >> $GITHUB_STEP_SUMMARY

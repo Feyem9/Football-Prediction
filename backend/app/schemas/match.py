@@ -59,6 +59,12 @@ class MatchResponse(BaseModel):
     score_home: Optional[int] = None
     score_away: Optional[int] = None
     
+    # Cotes de paris (The Odds API)
+    odds_home: Optional[float] = None
+    odds_draw: Optional[float] = None
+    odds_away: Optional[float] = None
+    odds_updated_at: Optional[datetime] = None
+    
     # Prédiction (si disponible)
     prediction: Optional["PredictionSummary"] = None
     

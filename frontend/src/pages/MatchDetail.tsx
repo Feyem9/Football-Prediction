@@ -6,6 +6,7 @@ import { useParams, Link } from 'react-router-dom';
 import { getMatch, getApex30Report } from '../lib/api';
 import type { Match, Apex30FullReport } from '../types';
 import RadarChart from '../components/predictions/RadarChart';
+import OddsDisplay from '../components/odds/OddsDisplay';
 
 export default function MatchDetail() {
   const { id } = useParams<{ id: string }>();
@@ -199,6 +200,11 @@ export default function MatchDetail() {
                   </div>
                 </div>
               </div>
+            </div>
+
+            {/* Betting Odds & Value Bet Analysis */}
+            <div className="mb-10">
+              <OddsDisplay match={match} />
             </div>
 
             {/* Three Logic Cards */}

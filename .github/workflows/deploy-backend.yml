@@ -1,0 +1,91 @@
+# =============================================================================
+# PRONOSCORE - Déploiement Backend vers Render
+# =============================================================================
+# Déclenché automatiquement lors d'un merge sur main ou production
+# =============================================================================
+
+name: 🚀 Deploy Backend
+
+on:
+  push:
+    branches: [main, production]
+    paths:
+      - "backend/**"
+      - ".github/workflows/deploy-backend.yml"
+  workflow_dispatch: # Permet le déclenchement manuel
+
+env:
+  RENDER_SERVICE_NAME: football-prediction
+
+jobs:
+  deploy:
+    name: 🚀 Deploy to Render
+    runs-on: ubuntu-latest
+    environment:
+      name: ${{ github.ref == 'refs/heads/production' && 'production' || 'staging' }}
+      url: https://football-prediction-mbil.onrender.com
+
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+
+      - name: 🔍 Determine environment
+        id: env
+        run: |
+          if [[ "${{ github.ref }}" == "refs/heads/production" ]]; then
+            echo "environment=production" >> $GITHUB_OUTPUT
+            echo "🚀 Deploying to PRODUCTION"
+          else
+            echo "environment=staging" >> $GITHUB_OUTPUT
+            echo "🧪 Deploying to STAGING"
+          fi
+
+      - name: 🚀 Trigger Render Deploy
+        env:
+          RENDER_DEPLOY_HOOK: ${{ secrets.RENDER_DEPLOY_HOOK_URL }}
+        run: |
+          if [ -z "$RENDER_DEPLOY_HOOK" ]; then
+            echo "⚠️ RENDER_DEPLOY_HOOK_URL not set, skipping deployment"
+            echo "📝 To enable auto-deploy, add RENDER_DEPLOY_HOOK_URL secret"
+            exit 0
+          fi
+
+          echo "🚀 Triggering Render deployment..."
+          response=$(curl -s -X POST "$RENDER_DEPLOY_HOOK")
+          echo "Response: $response"
+          echo "✅ Deploy triggered successfully!"
+
+      - name: ⏳ Wait for deployment
+        run: |
+          echo "⏳ Waiting 60 seconds for deployment to complete..."
+          sleep 60
+
+      - name: 🔍 Health check
+        run: |
+          echo "🔍 Running health check..."
+          for i in {1..5}; do
+            response=$(curl -s -o /dev/null -w "%{http_code}" https://football-prediction-mbil.onrender.com/ || echo "000")
+            if [ "$response" == "200" ]; then
+              echo "✅ Health check passed! (HTTP $response)"
+              exit 0
+            fi
+            echo "⏳ Attempt $i: HTTP $response - Retrying in 30s..."
+            sleep 30
+          done
+          echo "❌ Health check failed after 5 attempts"
+          exit 1
+
+      - name: 📢 Notify success
+        if: success()
+        run: |
+          echo "🎉 Backend deployed successfully!"
+          echo "🌐 URL: https://football-prediction-mbil.onrender.com"
+          echo "📅 Deployed at: $(date)"
+          echo "🔖 Commit: ${{ github.sha }}"
+
+      - name: 📢 Notify failure
+        if: failure()
+        run: |
+          echo "❌ Backend deployment failed!"
+          echo "🔖 Commit: ${{ github.sha }}"
+          echo "📝 Check Render dashboard for details"

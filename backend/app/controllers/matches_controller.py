@@ -144,6 +144,10 @@ def match_to_response(match: Match, db: Session = None) -> MatchResponse:
         status=match.status,
         score_home=match.score_home,
         score_away=match.score_away,
+        odds_home=match.odds_home,
+        odds_draw=match.odds_draw,
+        odds_away=match.odds_away,
+        odds_updated_at=match.odds_updated_at,
         prediction=prediction
     )
 

@@ -8,7 +8,9 @@ import type {
   CompetitionsResponse,
   CombinedPrediction,
   Match,
-  Apex30FullReport
+  Apex30FullReport,
+  OddsResponse,
+  ValueBetResponse
 } from '../types';
 
 // URL de l'API (production Render ou local)
@@ -100,6 +102,32 @@ export async function getCompetitions(): Promise<CompetitionsResponse> {
 export async function healthCheck(): Promise<{ status: string; database: string }> {
   const { data } = await api.get('/health');
   return data;
+}
+
+/**
+ * Récupère les cotes d'un match
+ */
+export async function getOdds(matchId: number): Promise<OddsResponse> {
+    const { data } = await api.get<OddsResponse>(`/odds/${matchId}`);
+    return data;
+}
+
+/**
+ * Force le rafraîchissement des cotes d'un match
+ */
+export async function refreshMatchOdds(matchId: number): Promise<OddsResponse> {
+    const { data } = await api.post<OddsResponse>(`/odds/${matchId}/refresh`);
+    return data;
+}
+
+/**
+ * Analyse un value bet pour un type de pari
+ */
+export async function getValueBet(matchId: number, betType: 'home' | 'draw' | 'away'): Promise<ValueBetResponse> {
+    const { data } = await api.get<ValueBetResponse>(`/odds/${matchId}/value-bet`, {
+        params: { bet_type: betType }
+    });
+    return data;
 }
 
 export default api;
